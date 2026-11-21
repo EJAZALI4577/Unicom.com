@@ -1,657 +1,3125 @@
-<!DOCTYPE htm<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" dir="ltr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Unicom — Global Cryptocurrency Trading Platform</title>
-  <style>
-    :root {
-      --bg-canvas: #0b0e11;
-      --bg-surface: #15191e;
-      --bg-elevated: #1d2229;
-      --bg-input: #242b34;
-      --border-line: #2b323c;
-      --text-main: #eaecef;
-      --text-muted: #8b95a5;
-      --gold: #fcd535;
-      --gold-hover: #ebb912;
-      --cyan: #00d2ff;
-      --green: #0ecb81;
-      --red: #f6465d;
-    }
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unicom — Cryptocurrency Spot Trading Terminal</title>
+    <style>
+        /* =====================================================================
+           1. DESIGN TOKENS & TERMINAL THEME (PURE CSS, ZERO EXTERNAL ASSETS)
+           ===================================================================== */
+        :root {
+            --bg-canvas: #0b0e11;
+            --bg-surface: #14181e;
+            --bg-elevated: #1b2028;
+            --bg-input: #232a35;
+            --bg-strip: #0f1318;
+            --border-line: #29313d;
+            --text-main: #eaecef;
+            --text-muted: #8b95a5;
+            --gold: #fcd535;
+            --gold-hover: #e5be1c;
+            --cyan: #00d2ff;
+            --green: #0ecb81;
+            --red: #f6465d;
+            --radius-lg: 14px;
+            --radius-md: 10px;
+            --radius-sm: 8px;
+        }
 
-    *, *::before, *::after {
-      box-sizing: border-box;
-    }
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
 
-    html, body {
-      margin: 0;
-      padding: 0;
-      background-color: var(--bg-canvas);
-      color: var(--text-main);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      font-size: 14px;
-      line-height: 1.45;
-      min-height: 100vh;
-    }
+        html, body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-canvas);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.45;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
 
-    .mono {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-variant-numeric: tabular-nums;
-    }
+        .mono {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+            font-variant-numeric: tabular-nums;
+        }
 
-    .hidden {
-      display: none !important;
-    }
+        .hidden {
+            display: none !important;
+        }
 
-    #toast-container {
-      position: fixed;
-      top: 14px;
-      right: 14px;
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      max-width: 400px;
-      width: calc(100% - 28px);
-    }
+        /* =====================================================================
+           2. TOAST FEEDBACK STACK (NO NATIVE ALERT OR CONFIRM DIALOGS)
+           ===================================================================== */
+        #toast-container {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-width: 420px;
+            width: calc(100% - 32px);
+            pointer-events: none;
+        }
 
-    .toast-msg {
-      padding: 11px 14px;
-      border-radius: 10px;
-      font-size: 12.5px;
-      font-weight: 700;
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      background: var(--bg-elevated);
-      color: var(--text-main);
-      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.65);
-    }
+        .toast-item {
+            pointer-events: auto;
+            padding: 11px 14px;
+            border-radius: var(--radius-md);
+            font-size: 12.5px;
+            font-weight: 700;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: var(--bg-elevated);
+            color: var(--text-main);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.65);
+        }
 
-    .toast-success {
-      background: var(--green);
-      color: #0b0e11;
-    }
+        .toast-success {
+            background: var(--green);
+            color: #0b0e11;
+            border-color: rgba(14, 203, 129, 0.7);
+        }
 
-    .toast-error {
-      background: var(--red);
-      color: #ffffff;
-    }
+        .toast-error {
+            background: var(--red);
+            color: #ffffff;
+            border-color: rgba(246, 70, 93, 0.7);
+        }
 
-    .access-shell {
-      max-width: 600px;
-      margin: 32px auto 48px;
-      padding: 0 16px;
-    }
+        .toast-info {
+            background: var(--bg-elevated);
+            color: var(--text-main);
+            border-color: rgba(252, 213, 53, 0.45);
+        }
 
-    .access-hero {
-      text-align: center;
-      margin-bottom: 20px;
-    }
+        /* =====================================================================
+           3. HEADERS, NAVIGATION & AUTHENTICATION SHELL
+           ===================================================================== */
+        .access-shell {
+            max-width: 960px;
+            margin: 30px auto 48px;
+            padding: 0 16px;
+        }
 
-    .access-hero h1 {
-      margin: 12px 0 6px;
-      font-size: 26px;
-      font-weight: 900;
-      color: #ffffff;
-    }
+        .access-hero {
+            text-align: center;
+            margin-bottom: 22px;
+        }
 
-    .brand-mark {
-      width: 34px;
-      height: 34px;
-      border-radius: 9px;
-      background: linear-gradient(135deg, var(--gold), var(--gold-hover));
-      color: #0b0e11;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 900;
-      font-size: 17px;
-    }
+        .access-hero h1 {
+            margin: 12px 0 6px;
+            font-size: 28px;
+            font-weight: 900;
+            color: #ffffff;
+            letter-spacing: -0.02em;
+        }
 
-    .brand-name {
-      font-size: 22px;
-      font-weight: 900;
-      color: #ffffff;
-    }
+        .access-tabs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
 
-    .live-badge {
-      font-size: 10px;
-      font-weight: 800;
-      text-transform: uppercase;
-      padding: 2px 7px;
-      border-radius: 999px;
-      background: rgba(14, 203, 129, 0.14);
-      color: var(--green);
-      border: 1px solid rgba(14, 203, 129, 0.35);
-    }
+        .access-tab-btn {
+            padding: 11px 14px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-line);
+            background: #10141a;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
 
-    .card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-line);
-      border-radius: 14px;
-      padding: 18px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-    }
+        .access-tab-btn.active {
+            background: rgba(252, 213, 53, 0.14);
+            border-color: var(--gold);
+            color: var(--gold);
+        }
 
-    .access-tabs {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 16px;
-    }
+        .top-header {
+            position: sticky;
+            top: 0;
+            z-index: 400;
+            background: rgba(11, 14, 17, 0.97);
+            border-bottom: 1px solid var(--border-line);
+            backdrop-filter: blur(8px);
+        }
 
-    .access-tab-btn {
-      padding: 11px 14px;
-      border-radius: 10px;
-      border: 1px solid var(--border-line);
-      background: #11151b;
-      color: var(--text-muted);
-      font-size: 13px;
-      font-weight: 800;
-      cursor: pointer;
-    }
+        .header-main {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 10px 16px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
 
-    .access-tab-btn.active {
-      background: rgba(252, 213, 53, 0.14);
-      border-color: var(--gold);
-      color: var(--gold);
-    }
+        .brand-wrap {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            user-select: none;
+        }
 
-    .heading-md {
-      margin: 0;
-      font-size: 16px;
-      font-weight: 800;
-      color: #ffffff;
-    }
+        .brand-mark {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-hover));
+            color: #0b0e11;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 17px;
+        }
 
-    .muted {
-      color: var(--text-muted);
-      font-size: 12.5px;
-    }
+        .brand-name {
+            font-size: 19px;
+            font-weight: 900;
+            color: #ffffff;
+            letter-spacing: -0.02em;
+        }
 
-    .form-field {
-      margin-bottom: 12px;
-    }
+        .live-badge {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: rgba(14, 203, 129, 0.14);
+            color: var(--green);
+            border: 1px solid rgba(14, 203, 129, 0.35);
+        }
 
-    .form-label {
-      display: block;
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--text-muted);
-      margin-bottom: 5px;
-    }
+        .view-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+        }
 
-    .input-box {
-      width: 100%;
-      padding: 9px 12px;
-      border-radius: 9px;
-      border: 1px solid var(--border-line);
-      background: var(--bg-input);
-      color: #ffffff;
-      font-size: 13px;
-      outline: none;
-    }
+        .view-tab {
+            padding: 7px 14px;
+            border-radius: var(--radius-sm);
+            border: 1px solid transparent;
+            background: var(--bg-surface);
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
 
-    .input-box:focus {
-      border-color: var(--gold);
-    }
+        .view-tab:hover {
+            color: #ffffff;
+            background: var(--bg-elevated);
+        }
 
-    .password-field-wrap {
-      position: relative;
-      display: flex;
-      align-items: center;
-    }
+        .view-tab.active {
+            background: var(--bg-elevated);
+            color: var(--gold);
+            border-color: rgba(252, 213, 53, 0.45);
+        }
 
-    .password-field-wrap .input-box {
-      padding-right: 42px;
-    }
+        .header-account-area {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+        }
 
-    .eye-toggle-btn {
-      position: absolute;
-      right: 6px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 30px;
-      height: 30px;
-      border-radius: 7px;
-      border: none;
-      background: transparent;
-      color: var(--text-muted);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-    }
+        .chip {
+            padding: 6px 11px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-line);
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
 
-    .eye-toggle-btn:hover {
-      color: #ffffff;
-      background: rgba(255, 255, 255, 0.08);
-    }
+        .chip-gold {
+            color: var(--gold);
+        }
 
-    .btn {
-      padding: 8px 13px;
-      border-radius: 9px;
-      border: 1px solid var(--border-line);
-      background: var(--bg-elevated);
-      color: var(--text-main);
-      font-size: 12.5px;
-      font-weight: 700;
-      cursor: pointer;
-    }
+        .chip-cyan {
+            color: var(--cyan);
+            border-color: rgba(0, 210, 255, 0.35);
+        }
 
-    .btn-gold {
-      background: var(--gold);
-      border-color: var(--gold);
-      color: #0b0e11;
-      font-weight: 800;
-    }
+        .status-bar {
+            background: var(--bg-strip);
+            border-top: 1px solid rgba(41, 49, 61, 0.65);
+            padding: 6px 16px;
+            font-size: 11.5px;
+            color: var(--text-muted);
+        }
 
-    .btn-red {
-      background: var(--red);
-      border-color: var(--red);
-      color: #ffffff;
-      font-weight: 800;
-    }
+        .status-bar-inner {
+            max-width: 1440px;
+            margin: 0 auto;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
 
-    .badge-green {
-      background: rgba(14, 203, 129, 0.16);
-      color: var(--green);
-      padding: 6px 10px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 700;
-    }
+        #last-action-label {
+            color: var(--cyan);
+            font-weight: 700;
+        }
 
-    .top-bar {
-      background: var(--bg-surface);
-      border-bottom: 1px solid var(--border-line);
-      padding: 12px 16px;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
+        /* =====================================================================
+           4. BUTTONS, CARDS, GRIDS, INPUTS, EYE TOGGLES & TABLES
+           ===================================================================== */
+        .btn {
+            padding: 7px 13px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-line);
+            background: var(--bg-elevated);
+            color: var(--text-main);
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.15s ease, transform 0.08s ease;
+        }
 
-    .container {
-      max-width: 1000px;
-      margin: 24px auto;
-      padding: 0 16px;
-    }
-  </style>
-</head>
-<body>
-  <div id="toast-container" aria-live="polite"></div>
+        .btn:hover {
+            opacity: 0.92;
+        }
 
-  <section id="auth-view" class="access-shell">
-    <div class="access-hero">
-      <div style="display:inline-flex; align-items:center; gap:10px;">
-        <div class="brand-mark">U</div>
-        <span class="brand-name">Unicom</span>
-        <span class="live-badge">Global Spot Exchange</span>
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-gold {
+            background: var(--gold);
+            border-color: var(--gold);
+            color: #0b0e11;
+            font-weight: 800;
+        }
+
+        .btn-gold:hover {
+            background: var(--gold-hover);
+        }
+
+        .btn-cyan {
+            background: rgba(0, 210, 255, 0.14);
+            border-color: rgba(0, 210, 255, 0.42);
+            color: var(--cyan);
+        }
+
+        .btn-green {
+            background: var(--green);
+            border-color: var(--green);
+            color: #0b0e11;
+            font-weight: 800;
+        }
+
+        .btn-red {
+            background: var(--red);
+            border-color: var(--red);
+            color: #ffffff;
+            font-weight: 800;
+        }
+
+        .btn-sm {
+            padding: 5px 9px;
+            font-size: 11.5px;
+            border-radius: 7px;
+        }
+
+        .main-container {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 20px 16px 48px;
+        }
+
+        .card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-line);
+            border-radius: var(--radius-lg);
+            padding: 18px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+        }
+
+        .card-top {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .heading-lg {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 800;
+            color: #ffffff;
+        }
+
+        .heading-md {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 800;
+            color: #ffffff;
+        }
+
+        .muted {
+            color: var(--text-muted);
+            font-size: 12.5px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 16px;
+        }
+
+        .grid-terminal {
+            display: grid;
+            grid-template-columns: 1.75fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 980px) {
+            .grid-terminal {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .kpi-card {
+            background: #10141a;
+            border: 1px solid var(--border-line);
+            border-radius: var(--radius-md);
+            padding: 12px 14px;
+        }
+
+        .kpi-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+
+        .kpi-number {
+            font-size: 20px;
+            font-weight: 900;
+            color: #ffffff;
+            margin-top: 4px;
+        }
+
+        .form-field {
+            margin-bottom: 12px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+
+        .input-box {
+            width: 100%;
+            padding: 9px 12px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-line);
+            background: var(--bg-input);
+            color: #ffffff;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .input-box:focus {
+            border-color: var(--gold);
+        }
+
+        .password-field-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .password-field-wrap .input-box {
+            padding-right: 42px;
+        }
+
+        .eye-toggle-btn {
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 30px;
+            height: 30px;
+            border-radius: 7px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .eye-toggle-btn:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .table-scroll {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 680px;
+            font-size: 13px;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(41, 49, 61, 0.72);
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        th {
+            background: #10141a;
+            color: var(--text-muted);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .up {
+            color: var(--green);
+        }
+
+        .down {
+            color: var(--red);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .badge-green {
+            background: rgba(14, 203, 129, 0.16);
+            color: var(--green);
+        }
+
+        .badge-red {
+            background: rgba(246, 70, 93, 0.16);
+            color: var(--red);
+        }
+
+        .badge-gold {
+            background: rgba(252, 213, 53, 0.16);
+            color: var(--gold);
+        }
+
+        .badge-cyan {
+            background: rgba(0, 210, 255, 0.16);
+            color: var(--cyan);
+        }
+
+        .sub-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .sub-nav .btn.active {
+            background: var(--gold);
+            border-color: var(--gold);
+            color: #0b0e11;
+            font-weight: 800;
+        }
+
+        /* =====================================================================
+           5. INTERACTIVE SVG PRICE CHARTS & CLOUD CONFIG MODAL/DRAWER
+           ===================================================================== */
+        .svg-chart-shell {
+            position: relative;
+            background: #0f141a;
+            border: 1px solid var(--border-line);
+            border-radius: var(--radius-md);
+            padding: 8px;
+        }
+
+        .main-svg-chart {
+            width: 100%;
+            height: 310px;
+            display: block;
+            cursor: crosshair;
+            user-select: none;
+        }
+
+        .chart-tooltip {
+            position: absolute;
+            top: 14px;
+            left: 16px;
+            background: rgba(20, 24, 30, 0.96);
+            border: 1px solid rgba(0, 210, 255, 0.45);
+            border-radius: var(--radius-sm);
+            padding: 6px 10px;
+            font-size: 11.5px;
+            color: var(--text-main);
+            pointer-events: none;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 5000;
+            background: rgba(6, 8, 11, 0.78);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .modal-backdrop.centered {
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .drawer-panel {
+            width: 100%;
+            max-width: 520px;
+            height: 100%;
+            background: var(--bg-surface);
+            border-left: 1px solid var(--border-line);
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: -16px 0 40px rgba(0, 0, 0, 0.65);
+        }
+
+        .modal-backdrop.centered .drawer-panel {
+            height: auto;
+            max-height: 92vh;
+            border: 1px solid var(--border-line);
+            border-radius: var(--radius-lg);
+        }
+
+        .sql-snippet {
+            background: #0b0e12;
+            border: 1px solid var(--border-line);
+            border-radius: var(--radius-sm);
+            padding: 11px;
+            font-size: 11px;
+            color: #b7c4d6;
+            overflow-x: auto;
+            white-space: pre;
+            margin: 0;
+        }
+    </style>
+  </head>
+  <body>
+    <!-- Toast Notifications -->
+    <div id="toast-container" aria-live="polite">
+    </div>
+    <!-- =====================================================================
+    UNIFIED ACCESS VIEW (LOG IN & SIGN UP ON THE USER SIDE)
+    ===================================================================== -->
+    <section id="auth-view" class="access-shell">
+      <div class="access-hero">
+        <div style="display:inline-flex; align-items:center; gap:10px;">
+          <div class="brand-mark">U</div>
+          <span class="brand-name" style="font-size:24px;">Unicom</span>
+          <span class="live-badge">Spot Trading Platform</span>
+        </div>
+        <h1>Unicom Account Access</h1>
+        <div class="muted">
+          Sign in to your trader or Super Admin account, or create a trader account with a valid <strong>@gmail.com</strong> address and <strong>phone number</strong> for a <strong>$10.00 USDT</strong> welcome bonus and <strong>$0.00</strong> starting crypto holdings.
+        </div>
       </div>
-      <h1>Unicom Account Access</h1>
-      <div class="muted">
-        Log in to your trader or administrator account, or sign up with a valid <strong>@gmail.com</strong> address and <strong>phone number</strong> for a <strong>$10.00 USDT</strong> welcome bonus and <strong>$0.00</strong> starting crypto holdings.
+      <div class="card" style="max-width:540px; margin:0 auto;">
+        <div class="access-tabs">
+          <button type="button" class="access-tab-btn active" id="auth-tab-login" onclick="setAuthMode('login')">Log In</button>
+          <button type="button" class="access-tab-btn" id="auth-tab-signup" onclick="setAuthMode('signup')">Sign Up ($10.00 USDT)</button>
+        </div>
+        <div id="admin-lockout-banner" class="badge badge-red hidden" style="display:block; margin-bottom:12px;">
+        </div>
+        <!-- Unified Log In Form (Regular Traders & Super Admin) -->
+        <form id="unified-login-form" onsubmit="handleUnifiedLogin(event)">
+          <h2 class="heading-md" style="margin-bottom:6px;">Log In to Unicom</h2>
+          <div class="muted" style="margin-bottom:14px;">
+            Traders log in with <strong>@gmail.com</strong>, <strong>phone number</strong>, and <strong>password</strong>. Super Admin signs in with email and password.
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="login-email">Email / Gmail Address</label>
+            <input type="email" id="login-email" class="input-box" placeholder="trader@gmail.com" autocomplete="username" required>
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="login-phone">Phone Number (Required for Trader Accounts)</label>
+            <input type="tel" id="login-phone" class="input-box mono" placeholder="+15550109988" autocomplete="tel">
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="login-password">Password</label>
+            <div class="password-field-wrap">
+              <input type="password" id="login-password" class="input-box" placeholder="Enter your password" autocomplete="current-password" required>
+              <button type="button" class="eye-toggle-btn" id="eye-login-password" onclick="togglePasswordVisibility('login-password', 'eye-login-password')" aria-label="Show or hide password">
+              </button>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-gold" style="width:100%; padding:11px; font-size:14px;">Log In</button>
+        </form>
+        <!-- Regular Trader Sign Up Form -->
+        <form id="unified-signup-form" class="hidden" onsubmit="handleUserSignup(event)">
+          <h2 class="heading-md" style="margin-bottom:6px;">Create Trader Account</h2>
+          <div class="muted" style="margin-bottom:14px;">
+            Requires a valid <strong>@gmail.com</strong> address, <strong>phone number</strong>, and <strong>password</strong>.
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="signup-name">Full Name</label>
+            <input type="text" id="signup-name" class="input-box" placeholder="Alex Morgan" autocomplete="name" required>
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="signup-email">Gmail Address (@gmail.com)</label>
+            <input type="email" id="signup-email" class="input-box" placeholder="alex.morgan@gmail.com" autocomplete="email" required>
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="signup-phone">Phone Number</label>
+            <input type="tel" id="signup-phone" class="input-box mono" placeholder="+15550101234" autocomplete="tel" required>
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="signup-password">Password</label>
+            <div class="password-field-wrap">
+              <input type="password" id="signup-password" class="input-box" minlength="4" placeholder="Create a password" autocomplete="new-password" required>
+              <button type="button" class="eye-toggle-btn" id="eye-signup-password" onclick="togglePasswordVisibility('signup-password', 'eye-signup-password')" aria-label="Show or hide password">
+              </button>
+            </div>
+          </div>
+          <div class="badge badge-green" style="display:block; margin-bottom:12px;">
+            Welcome Bonus: $10.00 USDT • Starting Crypto Holdings: $0.00
+          </div>
+          <button type="submit" class="btn btn-gold" style="width:100%; padding:11px; font-size:14px;">Create Account &amp; Start Trading</button>
+        </form>
+      </div>
+    </section>
+    <!-- =====================================================================
+    ISOLATED USER TRADING DASHBOARD (ZERO ADMIN LINKS OR BUTTONS)
+    ===================================================================== -->
+    <div id="user-view" class="hidden">
+      <header class="top-header">
+        <div class="header-main">
+          <div class="brand-wrap" onclick="switchUserTab('markets')">
+            <div class="brand-mark">U</div>
+            <span class="brand-name">Unicom</span>
+            <span class="live-badge">Spot Trader</span>
+          </div>
+          <nav class="view-tabs" aria-label="Trading Navigation">
+            <button type="button" class="view-tab active" data-utab="markets" id="utab-markets" onclick="switchUserTab('markets')">Markets</button>
+            <button type="button" class="view-tab" data-utab="trade" id="utab-trade" onclick="switchUserTab('trade')">Trade</button>
+            <button type="button" class="view-tab" data-utab="portfolio" id="utab-portfolio" onclick="switchUserTab('portfolio')">Portfolio</button>
+          </nav>
+          <div class="header-account-area">
+            <span class="chip mono">USDT: <strong class="chip-gold" id="header-usdt">$10.00</strong>
+          </span>
+          <span class="chip chip-cyan" id="header-user-badge">
+          </span>
+          <button type="button" class="btn btn-red" id="user-logout-btn" onclick="logoutToAccess()">Log Out</button>
+        </div>
+      </div>
+      <div class="status-bar">
+        <div class="status-bar-inner">
+          <div id="user-session-line">Signed In Trader</div>
+          <div>Status: <span id="last-action-label">Ready</span>
+        </div>
       </div>
     </div>
-
-    <div class="card">
-      <div class="access-tabs">
-        <button type="button" class="access-tab-btn active" id="auth-tab-login" onclick="setAuthMode('login')">Log In</button>
-        <button type="button" class="access-tab-btn" id="auth-tab-signup" onclick="setAuthMode('signup')">Sign Up ($10.00 USDT)</button>
-      </div>
-
-      <form id="unified-login-form" onsubmit="handleUnifiedLogin(event)">
-        <h2 class="heading-md" style="margin-bottom:6px;">Log In to Unicom</h2>
-        <div class="muted" style="margin-bottom:14px;">
-          Traders sign in with <strong>@gmail.com</strong>, <strong>phone number</strong>, and <strong>password</strong>. Super Admin signs in with email and password.
-        </div>
-
-        <div class="form-field">
-          <label class="form-label" for="login-email">Email / Gmail Address</label>
-          <input type="email" id="login-email" class="input-box" placeholder="trader@gmail.com" autocomplete="username" required />
-        </div>
-
-        <div class="form-field">
-          <label class="form-label" for="login-phone">Phone Number (Required for Trader Accounts)</label>
-          <input type="tel" id="login-phone" class="input-box mono" placeholder="+15550109988" autocomplete="tel" />
-        </div>
-
-        <div class="form-field">
-          <label class="form-label" for="login-password">Password</label>
-          <div class="password-field-wrap">
-            <input type="password" id="login-password" class="input-box" placeholder="Enter your password" autocomplete="current-password" required />
-            <button type="button" class="eye-toggle-btn" id="eye-login-password" onclick="togglePasswordVisibility('login-password', 'eye-login-password')" aria-label="Show or hide password"></button>
-          </div>
-        </div>
-
-        <button type="submit" class="btn btn-gold" style="width:100%; padding:11px; font-size:14px;">Log In</button>
-      </form>
-
-      <form id="unified-signup-form" class="hidden" onsubmit="handleUserSignup(event)">
-        <h2 class="heading-md" style="margin-bottom:6px;">Create Trader Account</h2>
-        <div class="muted" style="margin-bottom:14px;">
-          Requires a valid <strong>@gmail.com</strong> address, <strong>phone number</strong>, and <strong>password</strong>.
-        </div>
-
-        <div class="form-field">
-          <label class="form-label" for="signup-name">Full Name</label>
-          <input type="text" id="signup-name" class="input-box" placeholder="Alex Morgan" autocomplete="name" required />
-        </div>
-
-        <div class="form-field">
-          <label class="form-label" for="signup-email">Gmail Address (@gmail.com)</label>
-          <input type="email" id="signup-email" class="input-box" placeholder="alex.morgan@gmail.com" autocomplete="email" required />
-        </div>
-
-        <div class="form-field">
-          <label class="form-label" for="signup-phone">Phone Number</label>
-          <input type="tel" id="signup-phone" class="input-box mono" placeholder="+15550101234" autocomplete="tel" required />
-        </div>
-
-        <div class="form-field">
-          <label class="form-label" for="signup-password">Password</label>
-          <div class="password-field-wrap">
-            <input type="password" id="signup-password" class="input-box" minlength="4" placeholder="Create a password" autocomplete="new-password" required />
-            <button type="button" class="eye-toggle-btn" id="eye-signup-password" onclick="togglePasswordVisibility('signup-password', 'eye-signup-password')" aria-label="Show or hide password"></button>
-          </div>
-        </div>
-
-        <div class="badge-green" style="margin-bottom:12px;">
-          Welcome Bonus: $10.00 USDT • Starting Crypto Holdings: $0.00
-        </div>
-
-        <button type="submit" class="btn btn-gold" style="width:100%; padding:11px; font-size:14px;">Create Account & Start Trading</button>
-      </form>
-    </div>
-  </section>
-
-  <div id="session-view" class="hidden">
-    <header class="top-bar">
-      <div style="display:flex; align-items:center; gap:10px;">
-        <div class="brand-mark">U</div>
-        <span class="brand-name" style="font-size:18px;">Unicom</span>
-        <span class="live-badge" id="session-role-badge">Trader</span>
-      </div>
-      <div style="display:flex; align-items:center; gap:10px;">
-        <span id="session-user-label" class="mono" style="color:var(--cyan); font-weight:700;"></span>
-        <span id="session-balance-label" class="mono" style="color:var(--gold); font-weight:800;">$10.00 USDT</span>
-        <button type="button" class="btn btn-red" onclick="logoutToAccess()">Log Out</button>
-      </div>
-    </header>
-
-    <main class="container">
-      <div class="card">
-        <h2 class="heading-md" style="margin-bottom:8px;">Account Active</h2>
-        <p class="muted" id="session-details-text" style="margin:0;"></p>
-      </div>
-    </main>
+  </header>
+  <div id="user-halt-banner" class="hidden" style="background:rgba(246,70,93,0.16); border-bottom:1px solid rgba(246,70,93,0.45); color:#ff8a99; padding:7px 16px; text-align:center; font-size:12px; font-weight:700;">
   </div>
-
-  <script>
-    const ADMIN_EMAIL = "owner@unicom.com";
-    const DEFAULT_ADMIN_PASSWORD = "Unicom@2026#Secure";
-    const SIGNUP_BONUS_USDT = 10.00;
-    const STORAGE_KEY = "unicom_users_v1";
-
-    // Replace with your real Supabase Project URL and Anon Key when ready
-    const SUPABASE_URL = "https://YOUR-PROJECT-ID.supabase.co";
-    const SUPABASE_ANON_KEY = "YOUR-SUPABASE-ANON-KEY";
-
-    const memoryUsers = new Map();
-
-    const SVG_EYE_OPEN = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
-    const SVG_EYE_CLOSED = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"></path><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
-
-    function notify(message, type = "info") {
-      const container = document.getElementById("toast-container");
-      if (!container) return;
-      const el = document.createElement("div");
-      el.className = "toast-msg " + (type === "success" ? "toast-success" : type === "error" ? "toast-error" : "");
-      el.textContent = message;
-      container.appendChild(el);
-      setTimeout(() => {
-        if (el.parentNode) el.parentNode.removeChild(el);
-      }, 3200);
-    }
-
-    function isGmailAddress(email) {
-      return /^[a-z0-9._%+-]+@gmail\.com$/i.test(String(email || "").trim());
-    }
-
-    function isPhoneValid(phone) {
-      const digits = String(phone || "").replace(/\D/g, "");
-      return digits.length >= 7 && digits.length <= 15;
-    }
-
-    function loadLocalUsers() {
-      try {
-        if (window.localStorage) {
-          const raw = window.localStorage.getItem(STORAGE_KEY);
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed)) return parsed;
-          }
-        }
-      } catch (_e) {}
-      return Array.from(memoryUsers.values());
-    }
-
-    function saveLocalUsers(users) {
-      memoryUsers.clear();
-      users.forEach(u => memoryUsers.set(u.email.toLowerCase(), u));
-      try {
-        if (window.localStorage) {
-          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
-        }
-      } catch (_e) {}
-    }
-
-    function hasSupabaseConfig() {
-      return (
-        SUPABASE_URL.startsWith("https://") &&
-        !SUPABASE_URL.includes("YOUR-PROJECT-ID") &&
-        SUPABASE_ANON_KEY &&
-        !SUPABASE_ANON_KEY.includes("YOUR-SUPABASE-ANON-KEY")
-      );
-    }
-
-    async function syncUserToSupabase(user) {
-      if (!hasSupabaseConfig()) return;
-      try {
-        await fetch(`${SUPABASE_URL.replace(/\/+$/, "")}/rest/v1/users?on_conflict=email`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "apikey": SUPABASE_ANON_KEY,
-            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-            "Prefer": "resolution=merge-duplicates,return=representation"
-          },
-          body: JSON.stringify([{
-            email: user.email,
-            phone: user.phone,
-            usdt_balance: user.usdtBalance,
-            crypto_holdings: user.cryptoHoldings || {},
-            status: user.status || "Active"
-          }])
-        });
-      } catch (_err) {}
-    }
-
-    function setAuthMode(mode) {
-      const isSignup = mode === "signup";
-      document.getElementById("auth-tab-login").classList.toggle("active", !isSignup);
-      document.getElementById("auth-tab-signup").classList.toggle("active", isSignup);
-      document.getElementById("unified-login-form").classList.toggle("hidden", isSignup);
-      document.getElementById("unified-signup-form").classList.toggle("hidden", !isSignup);
-    }
-
-    function togglePasswordVisibility(inputId, btnId) {
-      const input = document.getElementById(inputId);
-      const btn = document.getElementById(btnId);
-      if (!input) return;
-      const show = input.type === "password";
-      input.type = show ? "text" : "password";
-      if (btn) {
-        btn.innerHTML = show ? SVG_EYE_CLOSED : SVG_EYE_OPEN;
-      }
-    }
-
-    function initEyeButtons() {
-      ["eye-login-password", "eye-signup-password"].forEach(id => {
-        const btn = document.getElementById(id);
-        if (btn) btn.innerHTML = SVG_EYE_OPEN;
-      });
-    }
-
-    function openSessionView(roleLabel, emailText, balanceText, detailText) {
-      document.getElementById("auth-view").classList.add("hidden");
-      document.getElementById("session-view").classList.remove("hidden");
-      document.getElementById("session-role-badge").textContent = roleLabel;
-      document.getElementById("session-user-label").textContent = emailText;
-      document.getElementById("session-balance-label").textContent = balanceText;
-      document.getElementById("session-details-text").textContent = detailText;
-    }
-
-    function logoutToAccess() {
-      document.getElementById("session-view").classList.add("hidden");
-      document.getElementById("auth-view").classList.remove("hidden");
-      setAuthMode("login");
-      notify("Logged out.", "info");
-    }
-
-    async function handleUserSignup(event) {
-      event.preventDefault();
-      const name = document.getElementById("signup-name").value.trim();
-      const email = document.getElementById("signup-email").value.trim().toLowerCase();
-      const phone = document.getElementById("signup-phone").value.trim();
-      const password = document.getElementById("signup-password").value;
-
-      if (!name) {
-        notify("Please enter your full name.", "error");
-        return;
-      }
-      if (!isGmailAddress(email)) {
-        notify("Please use a valid @gmail.com address.", "error");
-        return;
-      }
-      if (!isPhoneValid(phone)) {
-        notify("Please enter a valid phone number.", "error");
-        return;
-      }
-      if (password.length < 4) {
-        notify("Password must be at least 4 characters.", "error");
-        return;
-      }
-
-      const users = loadLocalUsers();
-      if (users.some(u => u.email.toLowerCase() === email)) {
-        notify("This @gmail.com account already exists. Please log in.", "error");
-        return;
-      }
-
-      const newUser = {
-        name,
-        email,
-        phone,
-        usdtBalance: SIGNUP_BONUS_USDT,
-        cryptoHoldings: {},
-        status: "Active"
-      };
-
-      users.push(newUser);
-      saveLocalUsers(users);
-      await syncUserToSupabase(newUser);
-
-      notify("Account created with $10.00 USDT welcome bonus!", "success");
-      openSessionView(
-        "Spot Trader",
-        `${email} (${phone})`,
-        `$${SIGNUP_BONUS_USDT.toFixed(2)} USDT`,
-        `Welcome ${name}. Your account is active with a $10.00 USDT welcome bonus and $0.00 starting crypto holdings.`
-      );
-    }
-
-    async function handleUnifiedLogin(event) {
-      event.preventDefault();
-      const email = document.getElementById("login-email").value.trim().toLowerCase();
-      const phone = document.getElementById("login-phone").value.trim();
-      const password = document.getElementById("login-password").value;
-
-      if (email === ADMIN_EMAIL.toLowerCase()) {
-        if (password !== DEFAULT_ADMIN_PASSWORD) {
-          notify("Invalid Super Admin password.", "error");
-          return;
-        }
-        notify("Super Admin signed in.", "success");
-        openSessionView(
-          "Super Admin",
-          ADMIN_EMAIL,
-          "Admin Console",
-          "Signed in as Unicom Super Administrator."
+  <main class="main-container">
+    <!-- Sub-View 1: Markets -->
+    <section id="user-view-markets">
+      <div class="card">
+        <div class="card-top">
+          <div>
+            <h1 class="heading-lg">Unicom Spot Markets</h1>
+            <div class="muted" id="user-profile-summary">Welcome bonus: $10.00 USDT • Starting crypto holdings: $0.00.</div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button type="button" class="btn btn-gold" onclick="switchUserTab('trade')">Trade Terminal</button>
+            <button type="button" class="btn" onclick="switchUserTab('portfolio')">Portfolio &amp; Appeals</button>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Pair</th>
+                <th class="text-right">Last Price</th>
+                <th class="text-right">24h Change</th>
+                <th class="text-right">24h High / Low</th>
+                <th class="text-right">Sparkline</th>
+                <th class="text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="markets-tbody">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+    <!-- Sub-View 2: Trade Terminal -->
+    <section id="user-view-trade" class="hidden">
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-top" style="margin-bottom:0;">
+          <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px;">
+            <div>
+              <label class="form-label" for="pair-selector">Trading Pair</label>
+              <select id="pair-selector" class="input-box" style="min-width:170px;" onchange="selectPair(this.value)">
+              </select>
+            </div>
+            <div>
+              <div class="form-label">Mark Price</div>
+              <div id="terminal-price" class="mono" style="font-size:20px; font-weight:900; color:#ffffff;">$0.00</div>
+            </div>
+            <div>
+              <div class="form-label">24h Change</div>
+              <div id="terminal-change" class="mono" style="font-size:14px; font-weight:800;">+0.00%</div>
+            </div>
+            <div>
+              <div class="form-label">Pair Status</div>
+              <div id="terminal-pair-status">
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button type="button" class="btn btn-sm" onclick="switchUserTab('markets')">Markets</button>
+            <button type="button" class="btn btn-sm" onclick="switchUserTab('portfolio')">Portfolio</button>
+          </div>
+        </div>
+      </div>
+      <div class="grid-terminal">
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div class="card">
+            <div class="card-top">
+              <h2 class="heading-md" id="chart-heading">BTC/USDT Interactive Chart (1H)</h2>
+              <div style="display:flex; gap:6px;">
+                <button type="button" class="btn btn-sm tf-btn btn-gold" data-tf="1H" onclick="changeTimeframe('1H')">1H</button>
+                <button type="button" class="btn btn-sm tf-btn" data-tf="24H" onclick="changeTimeframe('24H')">24H</button>
+                <button type="button" class="btn btn-sm tf-btn" data-tf="7D" onclick="changeTimeframe('7D')">7D</button>
+                <button type="button" class="btn btn-sm tf-btn" data-tf="1M" onclick="changeTimeframe('1M')">1M</button>
+              </div>
+            </div>
+            <div class="svg-chart-shell">
+              <svg id="price-chart-svg" class="main-svg-chart" viewBox="0 0 780 310" role="img" aria-label="Interactive cryptocurrency price chart">
+              </svg>
+              <div id="chart-hover-tooltip" class="chart-tooltip mono">Hover chart to inspect price</div>
+            </div>
+          </div>
+          <div class="card">
+            <h3 class="heading-md" style="margin-bottom:10px;">Recent Trades</h3>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Pair</th>
+                    <th>Side</th>
+                    <th class="text-right">Price</th>
+                    <th class="text-right">Quantity</th>
+                    <th class="text-right">Total (USDT)</th>
+                  </tr>
+                </thead>
+                <tbody id="recent-trades-tbody" class="mono">
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px;">
+            <button type="button" class="btn btn-green" id="buy-side-btn" onclick="setSide('buy')">Buy</button>
+            <button type="button" class="btn" id="sell-side-btn" onclick="setSide('sell')">Sell</button>
+          </div>
+          <form id="trade-order-form" onsubmit="executeOrder(event)">
+            <div class="form-field">
+              <label class="form-label" id="trade-input-label" for="trade-amount-input">Amount (USDT)</label>
+              <input type="number" step="any" min="0.000001" id="trade-amount-input" class="input-box mono" placeholder="0.00" required oninput="refreshOrderPreview()">
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-bottom:14px;">
+              <button type="button" class="btn btn-sm" onclick="setOrderByPercent(25)">25%</button>
+              <button type="button" class="btn btn-sm" onclick="setOrderByPercent(50)">50%</button>
+              <button type="button" class="btn btn-sm" onclick="setOrderByPercent(75)">75%</button>
+              <button type="button" class="btn btn-sm" onclick="setOrderByPercent(100)">100%</button>
+            </div>
+            <div class="kpi-card" style="margin-bottom:14px;">
+              <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px;">
+                <span class="muted">Available</span>
+                <span id="trade-available-val" class="mono" style="font-weight:800; color:#ffffff;">10.00 USDT</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; font-size:12px;">
+                <span class="muted">Estimated Output</span>
+                <span id="trade-estimated-val" class="mono" style="font-weight:800; color:var(--cyan);">0.0000 BTC</span>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-green" id="trade-submit-btn" style="width:100%; padding:11px; font-size:14px;">Buy BTC</button>
+          </form>
+        </div>
+      </div>
+    </section>
+    <!-- Sub-View 3: Portfolio & Deposit / Withdrawal Appeals -->
+    <section id="user-view-portfolio" class="hidden">
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-title">Total Equity (USD)</div>
+          <div class="kpi-number mono" id="pf-total-equity">$10.00</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">USDT Balance</div>
+          <div class="kpi-number mono" id="pf-usdt-balance" style="color:var(--gold);">$10.00</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Trader Contact</div>
+          <div class="kpi-number" id="pf-account-name" style="font-size:13px; color:var(--cyan);">—</div>
+        </div>
+      </div>
+      <div class="grid-2" style="margin-bottom:16px;">
+        <div class="card">
+          <h2 class="heading-md" style="margin-bottom:6px;">Submit Deposit Appeal</h2>
+          <div class="muted" style="margin-bottom:12px;">Enter a USDT amount and transaction reference or payment details.</div>
+          <form id="deposit-form" onsubmit="submitWalletAppeal(event, 'Deposit')">
+            <div class="form-field">
+              <label class="form-label" for="dep-amount">Amount (USDT)</label>
+              <input type="number" step="any" min="0.01" id="dep-amount" class="input-box mono" placeholder="50.00" required>
+            </div>
+            <div class="form-field">
+              <label class="form-label" for="dep-ref">Payment Method / TxID / Reference</label>
+              <input type="text" id="dep-ref" class="input-box" placeholder="TRC20 TxID or Bank Reference" required>
+            </div>
+            <button type="submit" class="btn btn-green" style="width:100%;">Submit Deposit Appeal</button>
+          </form>
+        </div>
+        <div class="card">
+          <h2 class="heading-md" style="margin-bottom:6px;">Submit Withdrawal Appeal</h2>
+          <div class="muted" style="margin-bottom:12px;">Enter a USDT amount and destination wallet or payout details.</div>
+          <form id="withdraw-form" onsubmit="submitWalletAppeal(event, 'Withdrawal')">
+            <div class="form-field">
+              <label class="form-label" for="wdr-amount">Amount (USDT)</label>
+              <input type="number" step="any" min="0.01" id="wdr-amount" class="input-box mono" placeholder="10.00" required>
+            </div>
+            <div class="form-field">
+              <label class="form-label" for="wdr-dest">Destination Address / Payout Details</label>
+              <input type="text" id="wdr-dest" class="input-box" placeholder="Destination Wallet Address" required>
+            </div>
+            <button type="submit" class="btn btn-gold" style="width:100%;">Submit Withdrawal Appeal</button>
+          </form>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <h3 class="heading-md" style="margin-bottom:10px;">USDT &amp; Crypto Holdings</h3>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Asset</th>
+                  <th class="text-right">Balance</th>
+                  <th class="text-right">Price</th>
+                  <th class="text-right">Value (USD)</th>
+                </tr>
+              </thead>
+              <tbody id="pf-holdings-tbody" class="mono">
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <h3 class="heading-md" style="margin-bottom:10px;">My Deposit &amp; Withdrawal Appeals</h3>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Type</th>
+                  <th class="text-right">Amount</th>
+                  <th>Reference / Address</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="pf-appeals-tbody" class="mono">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<!-- =====================================================================
+SUPER ADMIN CONTROL DASHBOARD
+===================================================================== -->
+<div id="admin-view" class="hidden">
+  <header class="top-header">
+    <div class="header-main">
+      <div class="brand-wrap" onclick="switchAdminSub('users')">
+        <div class="brand-mark" style="background:linear-gradient(135deg, var(--cyan), #0088cc); color:#0b0e11;">A</div>
+        <span class="brand-name">Unicom Admin Control</span>
+        <span class="badge badge-cyan">Super Admin</span>
+      </div>
+      <div class="header-account-area">
+        <button type="button" class="chip" id="admin-cloud-badge" onclick="openCloudConfigModal()">Cloud Sync: Local Fallback</button>
+        <button type="button" class="btn btn-sm btn-cyan" onclick="openCloudConfigModal()">Cloud Config</button>
+        <span class="chip chip-cyan mono" id="admin-header-email">owner@unicom.com</span>
+        <button type="button" class="btn btn-red" id="admin-logout-btn" onclick="logoutToAccess()">Log Out</button>
+      </div>
+    </div>
+  </header>
+  <main class="main-container">
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-top">
+        <div>
+          <span class="badge badge-green">Super Admin Console</span>
+          <h1 class="heading-lg" style="margin-top:6px;">Platform, Trader &amp; Appeal Control Center</h1>
+          <div class="muted" id="admin-sync-detail">Local/in-memory storage active • Zero pre-seeded fake users or appeals.</div>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+          <button type="button" class="btn btn-sm btn-cyan" onclick="openCloudConfigModal()">Supabase Config</button>
+          <button type="button" class="btn btn-sm btn-green" onclick="syncNowFromAdmin()">Sync Now</button>
+          <button type="button" class="btn btn-sm" onclick="resetPlatformData()">Reset Platform Data</button>
+        </div>
+      </div>
+      <div class="kpi-grid" style="margin-bottom:0;">
+        <div class="kpi-card">
+          <div class="kpi-title">Registered Traders</div>
+          <div class="kpi-number mono" id="adm-count-users">0</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Deposit Appeals</div>
+          <div class="kpi-number mono up" id="adm-count-deposits">0</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Withdrawal Appeals</div>
+          <div class="kpi-number mono" style="color:var(--gold);" id="adm-count-withdrawals">0</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Active Pairs</div>
+          <div class="kpi-number mono" style="color:var(--cyan);" id="adm-count-pairs">5</div>
+        </div>
+      </div>
+    </div>
+    <div class="sub-nav">
+      <button type="button" class="btn active" data-sub="users" id="sub-btn-users" onclick="switchAdminSub('users')">Users</button>
+      <button type="button" class="btn" data-sub="deposits" id="sub-btn-deposits" onclick="switchAdminSub('deposits')">Deposit Appeals</button>
+      <button type="button" class="btn" data-sub="withdrawals" id="sub-btn-withdrawals" onclick="switchAdminSub('withdrawals')">Withdrawal Appeals</button>
+      <button type="button" class="btn" data-sub="controls" id="sub-btn-controls" onclick="switchAdminSub('controls')">Market &amp; Security Controls</button>
+    </div>
+    <!-- Admin Sub-View 1: Registered @gmail.com + Phone Users -->
+    <div id="admin-sub-users" class="card">
+      <h2 class="heading-md" style="margin-bottom:10px;">Registered Traders (@gmail.com + Phone Number)</h2>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Trader</th>
+              <th>Gmail Address</th>
+              <th>Phone Number</th>
+              <th class="text-right">USDT Balance</th>
+              <th>Crypto Holdings</th>
+              <th>Status</th>
+              <th class="text-right">Balance, Coin &amp; Account Controls</th>
+            </tr>
+          </thead>
+          <tbody id="adm-users-tbody" class="mono">
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Admin Sub-View 2: Deposit Appeals -->
+    <div id="admin-sub-deposits" class="card hidden">
+      <h2 class="heading-md" style="margin-bottom:10px;">Deposit Appeals</h2>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Trader</th>
+              <th>Gmail Address</th>
+              <th>Phone Number</th>
+              <th class="text-right">Amount</th>
+              <th>Reference</th>
+              <th>Status</th>
+              <th class="text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody id="adm-deposits-tbody" class="mono">
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Admin Sub-View 3: Withdrawal Appeals -->
+    <div id="admin-sub-withdrawals" class="card hidden">
+      <h2 class="heading-md" style="margin-bottom:10px;">Withdrawal Appeals</h2>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Trader</th>
+              <th>Gmail Address</th>
+              <th>Phone Number</th>
+              <th class="text-right">Amount</th>
+              <th>Destination</th>
+              <th>Status</th>
+              <th class="text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody id="adm-withdrawals-tbody" class="mono">
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Admin Sub-View 4: Market Prices, Coin Pairs, Switches & Admin Password -->
+    <div id="admin-sub-controls" class="hidden">
+      <div class="grid-2" style="margin-bottom:16px;">
+        <div class="card">
+          <h2 class="heading-md" style="margin-bottom:10px;">Global Trading &amp; Wallet Switches</h2>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <button type="button" class="btn" id="sw-buy" onclick="toggleGlobalSwitch('buyHalted')">Buy: ACTIVE</button>
+            <button type="button" class="btn" id="sw-sell" onclick="toggleGlobalSwitch('sellHalted')">Sell: ACTIVE</button>
+            <button type="button" class="btn" id="sw-deposit" onclick="toggleGlobalSwitch('depositHalted')">Deposits: ACTIVE</button>
+            <button type="button" class="btn" id="sw-withdraw" onclick="toggleGlobalSwitch('withdrawHalted')">Withdrawals: ACTIVE</button>
+          </div>
+        </div>
+        <div class="card">
+          <h2 class="heading-md" style="margin-bottom:10px;">Change Super Admin Password</h2>
+          <form id="change-admin-pass-form" onsubmit="updateAdminPassword(event)">
+            <div class="form-field">
+              <label class="form-label" for="old-admin-pass">Current Password</label>
+              <div class="password-field-wrap">
+                <input type="password" id="old-admin-pass" class="input-box" required>
+                <button type="button" class="eye-toggle-btn" id="eye-old-pass" onclick="togglePasswordVisibility('old-admin-pass', 'eye-old-pass')" aria-label="Show or hide current password">
+                </button>
+              </div>
+            </div>
+            <div class="form-field">
+              <label class="form-label" for="new-admin-pass">New Password (min 8 chars)</label>
+              <div class="password-field-wrap">
+                <input type="password" id="new-admin-pass" class="input-box" minlength="8" required>
+                <button type="button" class="eye-toggle-btn" id="eye-new-pass" onclick="togglePasswordVisibility('new-admin-pass', 'eye-new-pass')" aria-label="Show or hide new password">
+                </button>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-cyan" style="width:100%;">Update Super Admin Password</button>
+          </form>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:16px;">
+        <h2 class="heading-md" style="margin-bottom:10px;">Add New Coin Pair</h2>
+        <form id="add-coin-form" onsubmit="addNewCoinPair(event)" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:10px; align-items:end;">
+          <div>
+            <label class="form-label" for="new-coin-symbol">Symbol (e.g. ADA)</label>
+            <input type="text" id="new-coin-symbol" class="input-box" placeholder="ADA" maxlength="8" required>
+          </div>
+          <div>
+            <label class="form-label" for="new-coin-name">Name (e.g. Cardano)</label>
+            <input type="text" id="new-coin-name" class="input-box" placeholder="Cardano" required>
+          </div>
+          <div>
+            <label class="form-label" for="new-coin-price">Initial Price (USDT)</label>
+            <input type="number" step="any" min="0.000001" id="new-coin-price" class="input-box mono" placeholder="0.85" required>
+          </div>
+          <div>
+            <button type="submit" class="btn btn-gold" style="width:100%;">Add Coin Pair</button>
+          </div>
+        </form>
+      </div>
+      <div class="card">
+        <h2 class="heading-md" style="margin-bottom:10px;">Market Prices &amp; Pair Controls</h2>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Pair</th>
+                <th class="text-right">Current Price</th>
+                <th>Set Price (USDT)</th>
+                <th>State</th>
+                <th class="text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="adm-pairs-tbody" class="mono">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<!-- =====================================================================
+SUPABASE CLOUD CONFIG DRAWER / MODAL
+===================================================================== -->
+<div id="cloud-config-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="cloud-modal-title">
+  <div class="drawer-panel">
+    <div class="card-top">
+      <div>
+        <span class="badge" id="modal-sb-badge">Local Fallback</span>
+        <h2 class="heading-lg" id="cloud-modal-title" style="margin-top:6px;">Supabase Cloud Sync Config</h2>
+      </div>
+      <button type="button" class="btn btn-sm" onclick="closeCloudConfigModal()">Close</button>
+    </div>
+    <div class="muted" id="modal-sb-detail" style="margin-bottom:14px;">
+      Configure your Supabase REST endpoints (<code>/rest/v1/users</code> and <code>/rest/v1/appeals</code>). Automatically falls back to <code>localStorage</code> and in-memory state if offline or unconfigured.
+    </div>
+    <form id="supabase-config-form" onsubmit="saveSupabaseConfig(event)">
+      <div class="form-field">
+        <label class="form-label" for="sb-url-input">Supabase Project URL</label>
+        <input type="url" id="sb-url-input" class="input-box mono" placeholder="https://your-project-id.supabase.co">
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="sb-key-input">Supabase Anon Key</label>
+        <div class="password-field-wrap">
+          <input type="password" id="sb-key-input" class="input-box mono" placeholder="Enter Supabase anon public key">
+          <button type="button" class="eye-toggle-btn" id="eye-sb-key" onclick="togglePasswordVisibility('sb-key-input', 'eye-sb-key')" aria-label="Show or hide Supabase anon key">
+          </button>
+        </div>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;">
+        <button type="submit" class="btn btn-gold">Save &amp; Sync</button>
+        <button type="button" class="btn btn-cyan" onclick="testSupabaseConnection()">Test Connection</button>
+        <button type="button" class="btn btn-green" onclick="syncNowFromAdmin()">Sync Now</button>
+        <button type="button" class="btn" onclick="clearSupabaseConfig()">Use Local Fallback</button>
+      </div>
+    </form>
+    <div>
+      <div class="form-label">Supabase SQL Schema (<code>users</code> &amp; <code>appeals</code>)</div>
+      <pre class="sql-snippet">create table if not exists public.users (
+        id text primary key,
+        name text not null,
+        email text unique not null,
+        phone text not null,
+        usdt_balance numeric(18, 4) not null default 10.00,
+        crypto_holdings jsonb not null default '{}'::jsonb,
+        status text not null default 'Active',
+        updated_at timestamptz not null default now()
         );
-        return;
-      }
+        create table if not exists public.appeals (
+        id text primary key,
+        appeal_type text not null,
+        user_id text not null,
+        user_name text not null,
+        user_email text not null,
+        user_phone text not null,
+        amount numeric(18, 4) not null,
+        reference_code text not null,
+        status text not null default 'Pending',
+        created_at timestamptz not null default now()
+        );</pre>
+      </div>
+    </div>
+  </div>
+  <script>
+        /* =====================================================================
+           1. RESILIENT STORAGE ENGINE (LOCALSTORAGE + IN-MEMORY FALLBACK)
+           ===================================================================== */
+        const STORAGE_KEY = 'unicom_terminal_state_v2';
+        const memoryStore = new Map();
 
-      if (!isGmailAddress(email)) {
-        notify("Trader login requires a valid @gmail.com address.", "error");
-        return;
-      }
-      if (!isPhoneValid(phone)) {
-        notify("Trader login requires a valid phone number.", "error");
-        return;
-      }
-      if (!password) {
-        notify("Please enter your password.", "error");
-        return;
-      }
+        function readSafeStorage(key) {
+            try {
+                if (window.localStorage) {
+                    const v = window.localStorage.getItem(key);
+                    if (v !== null) return v;
+                }
+            } catch (_err) {
+                // Storage access blocked or sandboxed; fall back to in-memory store
+            }
+            return memoryStore.has(key) ? memoryStore.get(key) : null;
+        }
 
-      const users = loadLocalUsers();
-      let user = users.find(u => u.email.toLowerCase() === email);
-      if (!user) {
-        user = {
-          name: email.split("@")[0],
-          email,
-          phone,
-          usdtBalance: SIGNUP_BONUS_USDT,
-          cryptoHoldings: {},
-          status: "Active"
+        function writeSafeStorage(key, value) {
+            try {
+                memoryStore.set(key, value);
+                if (window.localStorage) {
+                    window.localStorage.setItem(key, value);
+                }
+            } catch (_err) {
+                // Quota or sandbox restriction; keep in-memory copy
+                memoryStore.set(key, value);
+            }
+        }
+
+        /* =====================================================================
+           2. CONSTANTS, VALIDATION & FORMATTING HELPERS
+           ===================================================================== */
+        const ADMIN_EMAIL = 'owner@unicom.com';
+        const DEFAULT_ADMIN_PASSWORD = 'Unicom@2026#Secure';
+        const SIGNUP_BONUS_USDT = 10.00;
+
+        // Configurable Supabase REST API settings (editable in Cloud Config modal)
+        const SUPABASE_URL = 'https://YOUR-PROJECT-ID.supabase.co';
+        const SUPABASE_ANON_KEY = 'YOUR-SUPABASE-ANON-KEY';
+
+        let supabaseConfig = {
+            url: SUPABASE_URL,
+            anonKey: SUPABASE_ANON_KEY
         };
-        users.push(user);
-        saveLocalUsers(users);
-      } else {
-        user.phone = phone;
-        saveLocalUsers(users);
-      }
 
-      await syncUserToSupabase(user);
-      notify("Logged in to Unicom.", "success");
-      openSessionView(
-        "Spot Trader",
-        `${user.email} (${user.phone})`,
-        `$${Number(user.usdtBalance || SIGNUP_BONUS_USDT).toFixed(2)} USDT`,
-        `Signed in as ${user.name}.`
-      );
-    }
+        let cloudSyncStatus = {
+            mode: 'Local Fallback', // 'Connected' | 'Local Fallback' | 'Offline Fallback'
+            detail: 'Local/in-memory storage active'
+        };
 
-    initEyeButtons();
-  </script>
-</body>
-</html>
-l>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Snake</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <canvas id="canvas"></canvas>
-  <script src="render.js"></script><!-- defines canvas, ctx, draw() -->
-  <script src="input.js"></script><!-- attaches keyboard + touch listeners -->
-  <script src="game.js"></script> <!-- state, loop, boot -->
+        function isSupabaseConfigured() {
+            const url = String((supabaseConfig && supabaseConfig.url) || '').trim();
+            const key = String((supabaseConfig && supabaseConfig.anonKey) || '').trim();
+            if (!url || !key) return false;
+            if (!/^https:\/\/[a-z0-9.-]+\.supabase\.co\/?$/i.test(url)) return false;
+            if (url.includes('YOUR-PROJECT-ID') || key.includes('YOUR-SUPABASE-ANON-KEY')) return false;
+            return true;
+        }
 
+        function getSupabaseBaseUrl() {
+            return String(supabaseConfig.url || '').trim().replace(/\/+$/, '');
+        }
+
+        function getSupabaseHeaders(preferHeader) {
+            const headers = {
+                'Content-Type': 'application/json',
+                'apikey': String(supabaseConfig.anonKey || '').trim(),
+                'Authorization': 'Bearer ' + String(supabaseConfig.anonKey || '').trim()
+            };
+            if (preferHeader) headers['Prefer'] = preferHeader;
+            return headers;
+        }
+
+        function isGmailAddress(email) {
+            return /^[a-z0-9._%+-]+@gmail\.com$/i.test(String(email || '').trim());
+        }
+
+        function phoneDigitsOnly(phone) {
+            return String(phone || '').replace(/\D/g, '');
+        }
+
+        function isPhoneValid(phone) {
+            const digits = phoneDigitsOnly(phone);
+            return digits.length >= 7 && digits.length <= 15;
+        }
+
+        function formatUsd(val) {
+            const num = Number(val) || 0;
+            return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function formatPrice(val) {
+            const num = Number(val) || 0;
+            if (num >= 100) return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (num >= 1) return '$' + num.toFixed(2);
+            return '$' + num.toFixed(4);
+        }
+
+        function formatQty(val) {
+            const num = Number(val) || 0;
+            if (num === 0) return '0.0000';
+            if (num >= 100) return num.toFixed(2);
+            return num.toFixed(4);
+        }
+
+        function notifyStatus(message, level) {
+            const cls = level === 'success' ? 'toast-success' : level === 'error' ? 'toast-error' : 'toast-info';
+            const statusLabel = document.getElementById('last-action-label');
+            if (statusLabel) statusLabel.textContent = message;
+
+            const stack = document.getElementById('toast-container');
+            if (!stack) return;
+
+            const toast = document.createElement('div');
+            toast.className = 'toast-item ' + cls;
+            toast.textContent = message;
+            stack.appendChild(toast);
+
+            setTimeout(() => {
+                if (toast.parentNode) toast.parentNode.removeChild(toast);
+            }, 3400);
+        }
+
+        /* =====================================================================
+           3. INLINE SVG EYE ICON PASSWORD TOGGLES
+           ===================================================================== */
+        const SVG_EYE_OPEN = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+        const SVG_EYE_CLOSED = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"></path><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+
+        function syncAllEyeIcons() {
+            document.querySelectorAll('.eye-toggle-btn').forEach(btn => {
+                const inputId = btn.getAttribute('data-target');
+                const input = inputId ? document.getElementById(inputId) : null;
+                const visible = Boolean(input && input.type === 'text');
+                btn.innerHTML = visible ? SVG_EYE_CLOSED : SVG_EYE_OPEN;
+                btn.setAttribute('aria-pressed', visible ? 'true' : 'false');
+            });
+        }
+
+        function togglePasswordVisibility(inputId, btnId) {
+            const input = document.getElementById(inputId);
+            const btn = document.getElementById(btnId);
+            if (!input) return;
+            const reveal = input.type === 'password';
+            input.type = reveal ? 'text' : 'password';
+            if (btn) {
+                btn.setAttribute('data-target', inputId);
+                btn.innerHTML = reveal ? SVG_EYE_CLOSED : SVG_EYE_OPEN;
+                btn.setAttribute('aria-pressed', reveal ? 'true' : 'false');
+            }
+        }
+
+        function bindPasswordToggles() {
+            const pairsList = [
+                ['login-password', 'eye-login-password'],
+                ['signup-password', 'eye-signup-password'],
+                ['sb-key-input', 'eye-sb-key'],
+                ['old-admin-pass', 'eye-old-pass'],
+                ['new-admin-pass', 'eye-new-pass']
+            ];
+            pairsList.forEach(([inputId, btnId]) => {
+                const btn = document.getElementById(btnId);
+                if (btn) btn.setAttribute('data-target', inputId);
+            });
+            syncAllEyeIcons();
+        }
+
+        /* =====================================================================
+           4. MARKET PAIRS (BTC, ETH, SOL, XRP, BNB) & STATE
+           ===================================================================== */
+        function createDefaultPairs() {
+            return [
+                { id: 'btc', symbol: 'BTC', name: 'Bitcoin', price: 68450.00, change24h: 2.45, high24h: 69200.00, low24h: 66800.00, halted: false, history: [66900, 67250, 67800, 67520, 68100, 68450] },
+                { id: 'eth', symbol: 'ETH', name: 'Ethereum', price: 3520.00, change24h: 1.82, high24h: 3580.00, low24h: 3440.00, halted: false, history: [3450, 3475, 3460, 3505, 3495, 3520] },
+                { id: 'sol', symbol: 'SOL', name: 'Solana', price: 178.50, change24h: -1.14, high24h: 184.00, low24h: 175.20, halted: false, history: [182.4, 181.0, 179.8, 180.5, 177.9, 178.5] },
+                { id: 'xrp', symbol: 'XRP', name: 'XRP', price: 0.6420, change24h: 3.10, high24h: 0.6550, low24h: 0.6180, halted: false, history: [0.621, 0.628, 0.633, 0.630, 0.638, 0.642] },
+                { id: 'bnb', symbol: 'BNB', name: 'BNB', price: 612.00, change24h: 0.95, high24h: 619.00, low24h: 602.00, halted: false, history: [604, 606, 608, 607, 610, 612] }
+            ];
+        }
+
+        function createZeroHoldings() {
+            const holdings = {};
+            pairs.forEach(p => {
+                holdings[p.symbol] = 0;
+            });
+            return holdings;
+        }
+
+        function ensureUserHoldings(user) {
+            if (!user.holdings || typeof user.holdings !== 'object') {
+                user.holdings = createZeroHoldings();
+            }
+            pairs.forEach(p => {
+                if (typeof user.holdings[p.symbol] !== 'number' || isNaN(user.holdings[p.symbol])) {
+                    user.holdings[p.symbol] = 0;
+                }
+            });
+        }
+
+        let pairs = createDefaultPairs();
+        let switches = {
+            buyHalted: false,
+            sellHalted: false,
+            depositHalted: false,
+            withdrawHalted: false
+        };
+        let adminAuth = { password: DEFAULT_ADMIN_PASSWORD };
+        let users = [];
+        let appeals = [];
+        let recentTrades = [];
+        let session = null;
+        let lockoutEnd = 0;
+        let failedCount = 0;
+        let authMode = 'login';
+        let activeUserTab = 'markets';
+        let currentAdminSub = 'users';
+        let selectedPairId = 'btc';
+        let currentTimeframe = '1H';
+        let orderSide = 'buy';
+        let chartHoverIndex = null;
+
+        function persistState() {
+            try {
+                writeSafeStorage(STORAGE_KEY, JSON.stringify({
+                    pairs: pairs,
+                    switches: switches,
+                    adminAuth: adminAuth,
+                    users: users,
+                    appeals: appeals,
+                    recentTrades: recentTrades,
+                    session: session,
+                    lockoutEnd: lockoutEnd,
+                    failedCount: failedCount,
+                    supabaseConfig: supabaseConfig
+                }));
+            } catch (_err) {
+                // Keep in-memory state intact
+            }
+        }
+
+        function loadState() {
+            try {
+                const raw = readSafeStorage(STORAGE_KEY);
+                if (!raw) return;
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed.pairs) && parsed.pairs.length > 0) pairs = parsed.pairs;
+                if (parsed.switches && typeof parsed.switches === 'object') switches = Object.assign(switches, parsed.switches);
+                if (parsed.adminAuth && typeof parsed.adminAuth.password === 'string' && parsed.adminAuth.password.length > 0) {
+                    adminAuth = parsed.adminAuth;
+                }
+                if (Array.isArray(parsed.users)) {
+                    users = parsed.users.filter(u => u && isGmailAddress(u.email) && isPhoneValid(u.phone));
+                    users.forEach(ensureUserHoldings);
+                }
+                if (Array.isArray(parsed.appeals)) appeals = parsed.appeals;
+                if (Array.isArray(parsed.recentTrades)) recentTrades = parsed.recentTrades;
+                if (parsed.session && typeof parsed.session === 'object') session = parsed.session;
+                if (typeof parsed.lockoutEnd === 'number') lockoutEnd = parsed.lockoutEnd;
+                if (typeof parsed.failedCount === 'number') failedCount = parsed.failedCount;
+                if (parsed.supabaseConfig && typeof parsed.supabaseConfig === 'object') {
+                    supabaseConfig = {
+                        url: typeof parsed.supabaseConfig.url === 'string' ? parsed.supabaseConfig.url : SUPABASE_URL,
+                        anonKey: typeof parsed.supabaseConfig.anonKey === 'string' ? parsed.supabaseConfig.anonKey : SUPABASE_ANON_KEY
+                    };
+                }
+            } catch (_err) {
+                // Safe defaults remain active
+            }
+        }
+
+        function isAdminAuthenticated() {
+            return Boolean(session && session.role === 'admin');
+        }
+
+        function getActiveUser() {
+            if (!session || session.role !== 'user' || !session.userId) return null;
+            const user = users.find(u => u.id === session.userId && isGmailAddress(u.email) && isPhoneValid(u.phone));
+            if (!user) return null;
+            ensureUserHoldings(user);
+            return user;
+        }
+
+        /* =====================================================================
+           5. SUPABASE REST SYNC (/rest/v1/users & /rest/v1/appeals) + FALLBACK
+           ===================================================================== */
+        function setCloudFallback(reason) {
+            cloudSyncStatus.mode = isSupabaseConfigured() ? 'Offline Fallback' : 'Local Fallback';
+            cloudSyncStatus.detail = reason;
+            if (isAdminAuthenticated()) renderCloudIndicators();
+        }
+
+        function setCloudConnected(summary) {
+            cloudSyncStatus.mode = 'Connected';
+            cloudSyncStatus.detail = summary + ' (' + new Date().toTimeString().slice(0, 8) + ')';
+            if (isAdminAuthenticated()) renderCloudIndicators();
+        }
+
+        function renderCloudIndicators() {
+            const topBadge = document.getElementById('admin-cloud-badge');
+            const modalBadge = document.getElementById('modal-sb-badge');
+            const detail = document.getElementById('admin-sync-detail');
+            const modalDetail = document.getElementById('modal-sb-detail');
+
+            const isConnected = cloudSyncStatus.mode === 'Connected';
+            if (topBadge) {
+                topBadge.textContent = 'Cloud Sync: ' + cloudSyncStatus.mode;
+                topBadge.className = isConnected ? 'chip badge-green' : 'chip badge-gold';
+            }
+            if (modalBadge) {
+                modalBadge.textContent = isConnected
+                    ? 'Supabase Connected'
+                    : (isSupabaseConfigured() ? 'Offline Fallback' : 'Local Fallback');
+                modalBadge.className = isConnected ? 'badge badge-green' : 'badge badge-gold';
+            }
+            if (detail) detail.textContent = cloudSyncStatus.detail;
+            if (modalDetail) modalDetail.textContent = cloudSyncStatus.detail;
+        }
+
+        function openCloudConfigModal() {
+            const modal = document.getElementById('cloud-config-modal');
+            const urlInp = document.getElementById('sb-url-input');
+            const keyInp = document.getElementById('sb-key-input');
+            if (urlInp) urlInp.value = supabaseConfig.url || '';
+            if (keyInp) keyInp.value = supabaseConfig.anonKey || '';
+            renderCloudIndicators();
+            if (modal) modal.classList.remove('hidden');
+            syncAllEyeIcons();
+        }
+
+        function closeCloudConfigModal() {
+            const modal = document.getElementById('cloud-config-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        async function syncUserToSupabase(user) {
+            if (!isSupabaseConfigured() || !user || !isGmailAddress(user.email) || !isPhoneValid(user.phone)) {
+                setCloudFallback('Saved locally (Supabase not configured)');
+                return false;
+            }
+            try {
+                ensureUserHoldings(user);
+                const body = [{
+                    id: user.id,
+                    name: user.name,
+                    email: user.email.trim().toLowerCase(),
+                    phone: user.phone.trim(),
+                    usdt_balance: Number((Number(user.usdt) || 0).toFixed(4)),
+                    crypto_holdings: user.holdings,
+                    status: user.status || 'Active',
+                    updated_at: new Date().toISOString()
+                }];
+                const res = await fetch(
+                    getSupabaseBaseUrl() + '/rest/v1/users?on_conflict=email',
+                    {
+                        method: 'POST',
+                        headers: getSupabaseHeaders('resolution=merge-duplicates,return=representation'),
+                        body: JSON.stringify(body)
+                    }
+                );
+                if (!res.ok) {
+                    setCloudFallback('Supabase user sync fallback (HTTP ' + res.status + ')');
+                    return false;
+                }
+                setCloudConnected('Synced user ' + user.email);
+                return true;
+            } catch (_err) {
+                setCloudFallback('Offline fallback (saved locally)');
+                return false;
+            }
+        }
+
+        async function deleteUserFromSupabase(userId) {
+            if (!isSupabaseConfigured() || !userId) return false;
+            try {
+                const res = await fetch(
+                    getSupabaseBaseUrl() + '/rest/v1/users?id=eq.' + encodeURIComponent(userId),
+                    {
+                        method: 'DELETE',
+                        headers: getSupabaseHeaders()
+                    }
+                );
+                if (!res.ok) {
+                    setCloudFallback('Supabase delete fallback (HTTP ' + res.status + ')');
+                    return false;
+                }
+                setCloudConnected('Deleted user ' + userId);
+                return true;
+            } catch (_err) {
+                setCloudFallback('Offline fallback (deleted locally)');
+                return false;
+            }
+        }
+
+        async function syncAppealToSupabase(appeal) {
+            if (!isSupabaseConfigured() || !appeal) {
+                setCloudFallback('Appeal saved locally (Supabase not configured)');
+                return false;
+            }
+            try {
+                const body = [{
+                    id: appeal.id,
+                    appeal_type: appeal.type,
+                    user_id: appeal.userId,
+                    user_name: appeal.userName,
+                    user_email: appeal.userEmail,
+                    user_phone: appeal.userPhone,
+                    amount: Number((Number(appeal.amount) || 0).toFixed(4)),
+                    reference_code: appeal.ref,
+                    status: appeal.status || 'Pending',
+                    created_at: new Date().toISOString()
+                }];
+                const res = await fetch(
+                    getSupabaseBaseUrl() + '/rest/v1/appeals?on_conflict=id',
+                    {
+                        method: 'POST',
+                        headers: getSupabaseHeaders('resolution=merge-duplicates,return=representation'),
+                        body: JSON.stringify(body)
+                    }
+                );
+                if (!res.ok) {
+                    setCloudFallback('Supabase appeal sync fallback (HTTP ' + res.status + ')');
+                    return false;
+                }
+                setCloudConnected('Synced appeal ' + appeal.id);
+                return true;
+            } catch (_err) {
+                setCloudFallback('Offline fallback (appeal saved locally)');
+                return false;
+            }
+        }
+
+        async function fetchUserFromSupabase(email) {
+            if (!isSupabaseConfigured() || !isGmailAddress(email)) return null;
+            try {
+                const res = await fetch(
+                    getSupabaseBaseUrl() + '/rest/v1/users?email=eq.' + encodeURIComponent(email.trim().toLowerCase()) + '&select=*',
+                    {
+                        method: 'GET',
+                        headers: getSupabaseHeaders()
+                    }
+                );
+                if (!res.ok) {
+                    setCloudFallback('Supabase lookup fallback (HTTP ' + res.status + ')');
+                    return null;
+                }
+                const rows = await res.json();
+                setCloudConnected('Fetched profile for ' + email);
+                return Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+            } catch (_err) {
+                setCloudFallback('Offline fallback (using local profile)');
+                return null;
+            }
+        }
+
+        async function pullUsersAndAppealsFromSupabase() {
+            if (!isSupabaseConfigured()) {
+                setCloudFallback('Local/in-memory storage active');
+                return false;
+            }
+            try {
+                const [uRes, aRes] = await Promise.all([
+                    fetch(getSupabaseBaseUrl() + '/rest/v1/users?select=*&order=updated_at.desc', { headers: getSupabaseHeaders() }),
+                    fetch(getSupabaseBaseUrl() + '/rest/v1/appeals?select=*&order=created_at.desc', { headers: getSupabaseHeaders() })
+                ]);
+                if (!uRes.ok || !aRes.ok) {
+                    setCloudFallback('Supabase pull fallback (HTTP ' + (uRes.ok ? aRes.status : uRes.status) + ')');
+                    return false;
+                }
+
+                const remoteUsers = await uRes.json();
+                const remoteAppeals = await aRes.json();
+
+                if (Array.isArray(remoteUsers)) {
+                    const userMap = new Map(users.map(u => [u.email.toLowerCase(), u]));
+                    remoteUsers.forEach(ru => {
+                        if (!ru || !isGmailAddress(ru.email) || !isPhoneValid(ru.phone)) return;
+                        const key = ru.email.trim().toLowerCase();
+                        const prev = userMap.get(key);
+                        const merged = {
+                            id: ru.id || (prev && prev.id) || ('USR-' + Math.floor(1000 + Math.random() * 9000)),
+                            name: ru.name || (prev && prev.name) || key.split('@')[0],
+                            email: key,
+                            phone: ru.phone.trim(),
+                            password: (prev && prev.password) || '',
+                            usdt: typeof ru.usdt_balance === 'number' ? ru.usdt_balance : Number(ru.usdt_balance) || SIGNUP_BONUS_USDT,
+                            holdings: (ru.crypto_holdings && typeof ru.crypto_holdings === 'object') ? ru.crypto_holdings : ((prev && prev.holdings) || createZeroHoldings()),
+                            status: ru.status || 'Active'
+                        };
+                        ensureUserHoldings(merged);
+                        userMap.set(key, merged);
+                    });
+                    users = Array.from(userMap.values());
+                }
+
+                if (Array.isArray(remoteAppeals)) {
+                    const appealMap = new Map(appeals.map(a => [a.id, a]));
+                    remoteAppeals.forEach(ra => {
+                        if (!ra || !ra.id) return;
+                        appealMap.set(ra.id, {
+                            id: ra.id,
+                            type: ra.appeal_type === 'Withdrawal' ? 'Withdrawal' : 'Deposit',
+                            userId: ra.user_id || '',
+                            userName: ra.user_name || '',
+                            userEmail: (ra.user_email || '').toLowerCase(),
+                            userPhone: ra.user_phone || '',
+                            amount: Number(ra.amount) || 0,
+                            ref: ra.reference_code || '',
+                            status: ra.status || 'Pending'
+                        });
+                    });
+                    appeals = Array.from(appealMap.values());
+                }
+
+                persistState();
+                setCloudConnected('Pulled ' + users.length + ' traders & ' + appeals.length + ' appeals');
+                return true;
+            } catch (_err) {
+                setCloudFallback('Offline fallback (using local data)');
+                return false;
+            }
+        }
+
+        async function syncNowFromAdmin() {
+            if (!isSupabaseConfigured()) {
+                setCloudFallback('Local/in-memory storage active');
+                renderAdminDashboard();
+                notifyStatus('Supabase not configured; running on local/in-memory fallback.', 'info');
+                return;
+            }
+            const realUsers = users.filter(u => isGmailAddress(u.email) && isPhoneValid(u.phone));
+            await Promise.all([
+                ...realUsers.map(u => syncUserToSupabase(u)),
+                ...appeals.map(a => syncAppealToSupabase(a))
+            ]);
+            const pulled = await pullUsersAndAppealsFromSupabase();
+            renderAdminDashboard();
+            notifyStatus(
+                pulled ? 'Synced all traders and appeals with Supabase' : 'Supabase unreachable; local/in-memory fallback active',
+                pulled ? 'success' : 'info'
+            );
+        }
+
+        async function testSupabaseConnection() {
+            if (!isSupabaseConfigured()) {
+                setCloudFallback('Enter a valid https://*.supabase.co URL and Anon Key first');
+                renderCloudIndicators();
+                notifyStatus('Enter a valid Supabase Project URL and Anon Key.', 'error');
+                return;
+            }
+            try {
+                const res = await fetch(getSupabaseBaseUrl() + '/rest/v1/users?select=id&limit=1', {
+                    method: 'GET',
+                    headers: getSupabaseHeaders()
+                });
+                if (!res.ok) {
+                    setCloudFallback('Connection test failed (HTTP ' + res.status + ')');
+                    renderCloudIndicators();
+                    notifyStatus('Supabase test returned HTTP ' + res.status + '. Verify SQL & RLS.', 'error');
+                    return;
+                }
+                setCloudConnected('Connection test succeeded');
+                renderCloudIndicators();
+                notifyStatus('Supabase REST connection verified!', 'success');
+            } catch (_err) {
+                setCloudFallback('Offline fallback (connection test failed)');
+                renderCloudIndicators();
+                notifyStatus('Network error during connection test; local fallback active.', 'info');
+            }
+        }
+
+        /* =====================================================================
+           6. SHELL ROUTING (auth-view vs user-view vs admin-view)
+           ===================================================================== */
+        function syncShellVisibility() {
+            const authEl = document.getElementById('auth-view');
+            const userEl = document.getElementById('user-view');
+            const adminEl = document.getElementById('admin-view');
+
+            if (isAdminAuthenticated()) {
+                if (authEl) authEl.classList.add('hidden');
+                if (userEl) userEl.classList.add('hidden');
+                if (adminEl) adminEl.classList.remove('hidden');
+                renderAdminDashboard();
+                return;
+            }
+
+            const activeUser = getActiveUser();
+            if (activeUser) {
+                if (authEl) authEl.classList.add('hidden');
+                if (userEl) userEl.classList.remove('hidden');
+                if (adminEl) adminEl.classList.add('hidden');
+                renderUserDashboard(activeUser);
+                return;
+            }
+
+            session = null;
+            persistState();
+            if (authEl) authEl.classList.remove('hidden');
+            if (userEl) userEl.classList.add('hidden');
+            if (adminEl) adminEl.classList.add('hidden');
+            renderAuthView();
+        }
+
+        function logoutToAccess() {
+            session = null;
+            closeCloudConfigModal();
+            persistState();
+            syncShellVisibility();
+            notifyStatus('Logged out', 'info');
+        }
+
+        /* =====================================================================
+           7. UNIFIED LOGIN & SIGN-UP FLOW
+           ===================================================================== */
+        function setAuthMode(mode) {
+            authMode = mode === 'signup' ? 'signup' : 'login';
+            const isSignup = authMode === 'signup';
+            const loginTab = document.getElementById('auth-tab-login');
+            const signupTab = document.getElementById('auth-tab-signup');
+            const loginForm = document.getElementById('unified-login-form');
+            const signupForm = document.getElementById('unified-signup-form');
+
+            if (loginTab) loginTab.className = isSignup ? 'access-tab-btn' : 'access-tab-btn active';
+            if (signupTab) signupTab.className = isSignup ? 'access-tab-btn active' : 'access-tab-btn';
+            if (loginForm) {
+                if (isSignup) loginForm.classList.add('hidden');
+                else loginForm.classList.remove('hidden');
+            }
+            if (signupForm) {
+                if (isSignup) signupForm.classList.remove('hidden');
+                else signupForm.classList.add('hidden');
+            }
+            syncAllEyeIcons();
+        }
+
+        function refreshLockoutNotice() {
+            const banner = document.getElementById('admin-lockout-banner');
+            const now = Date.now();
+            if (lockoutEnd > now) {
+                const sec = Math.ceil((lockoutEnd - now) / 1000);
+                if (banner) {
+                    banner.textContent = 'Too many failed Super Admin attempts. Try again in ' + sec + 's.';
+                    banner.classList.remove('hidden');
+                }
+                return true;
+            }
+            if (banner) banner.classList.add('hidden');
+            return false;
+        }
+
+        function renderAuthView() {
+            setAuthMode(authMode);
+            refreshLockoutNotice();
+            syncAllEyeIcons();
+        }
+
+        async function handleUnifiedLogin(event) {
+            event.preventDefault();
+            try {
+                const email = document.getElementById('login-email').value.trim().toLowerCase();
+                const phone = document.getElementById('login-phone').value.trim();
+                const password = document.getElementById('login-password').value;
+
+                // Super Admin credentials check from the unified login form
+                if (email === ADMIN_EMAIL) {
+                    if (refreshLockoutNotice()) {
+                        notifyStatus('Super Admin login temporarily locked.', 'error');
+                        return;
+                    }
+                    if (password === adminAuth.password) {
+                        failedCount = 0;
+                        lockoutEnd = 0;
+                        session = { role: 'admin' };
+                        persistState();
+                        event.target.reset();
+                        syncShellVisibility();
+                        await pullUsersAndAppealsFromSupabase();
+                        if (isAdminAuthenticated()) renderAdminDashboard();
+                        notifyStatus('Super Admin Control Dashboard opened', 'success');
+                        return;
+                    }
+
+                    failedCount += 1;
+                    if (failedCount >= 3) {
+                        lockoutEnd = Date.now() + 60000;
+                        failedCount = 0;
+                        persistState();
+                        refreshLockoutNotice();
+                        notifyStatus('3 failed Super Admin attempts: locked for 60s.', 'error');
+                    } else {
+                        persistState();
+                        notifyStatus('Invalid Super Admin password (' + failedCount + '/3).', 'error');
+                    }
+                    return;
+                }
+
+                // Regular trader login requires valid @gmail.com + phone number + password
+                if (!isGmailAddress(email)) {
+                    notifyStatus('Trader login requires a valid @gmail.com email address.', 'error');
+                    return;
+                }
+                if (!isPhoneValid(phone)) {
+                    notifyStatus('Trader login requires a valid phone number (7 to 15 digits).', 'error');
+                    return;
+                }
+
+                let existing = users.find(u => u.email.toLowerCase() === email);
+                if (!existing && isSupabaseConfigured()) {
+                    const cloudRow = await fetchUserFromSupabase(email);
+                    if (cloudRow && isPhoneValid(cloudRow.phone)) {
+                        existing = {
+                            id: cloudRow.id || ('USR-' + Math.floor(1000 + Math.random() * 9000)),
+                            name: cloudRow.name || email.split('@')[0],
+                            email: email,
+                            phone: cloudRow.phone.trim(),
+                            password: password,
+                            usdt: typeof cloudRow.usdt_balance === 'number' ? cloudRow.usdt_balance : Number(cloudRow.usdt_balance) || SIGNUP_BONUS_USDT,
+                            holdings: (cloudRow.crypto_holdings && typeof cloudRow.crypto_holdings === 'object') ? cloudRow.crypto_holdings : createZeroHoldings(),
+                            status: cloudRow.status || 'Active'
+                        };
+                        ensureUserHoldings(existing);
+                        users.unshift(existing);
+                    }
+                }
+
+                if (!existing) {
+                    notifyStatus('No account found for ' + email + '. Please Sign Up first.', 'error');
+                    return;
+                }
+                if (existing.password && existing.password !== password) {
+                    notifyStatus('Incorrect password.', 'error');
+                    return;
+                }
+                if (!existing.password) {
+                    existing.password = password;
+                }
+                if (phoneDigitsOnly(existing.phone) !== phoneDigitsOnly(phone)) {
+                    notifyStatus('Phone number does not match this account.', 'error');
+                    return;
+                }
+                if (existing.status === 'Suspended') {
+                    notifyStatus('This account is suspended.', 'error');
+                    return;
+                }
+
+                ensureUserHoldings(existing);
+                session = { role: 'user', userId: existing.id };
+                activeUserTab = 'markets';
+                persistState();
+                event.target.reset();
+                syncShellVisibility();
+                await syncUserToSupabase(existing);
+                notifyStatus('Signed in as ' + existing.email, 'success');
+            } catch (err) {
+                notifyStatus('Login error: ' + err.message, 'error');
+            }
+        }
+
+        async function handleUserSignup(event) {
+            event.preventDefault();
+            try {
+                const name = document.getElementById('signup-name').value.trim();
+                const email = document.getElementById('signup-email').value.trim().toLowerCase();
+                const phone = document.getElementById('signup-phone').value.trim();
+                const password = document.getElementById('signup-password').value;
+
+                if (!name) {
+                    notifyStatus('Please enter your full name.', 'error');
+                    return;
+                }
+                if (!isGmailAddress(email)) {
+                    notifyStatus('Please enter a valid @gmail.com address.', 'error');
+                    return;
+                }
+                if (!isPhoneValid(phone)) {
+                    notifyStatus('Please enter a valid phone number (7 to 15 digits).', 'error');
+                    return;
+                }
+                if (!password || password.length < 4) {
+                    notifyStatus('Password must be at least 4 characters.', 'error');
+                    return;
+                }
+                if (email === ADMIN_EMAIL || users.some(u => u.email.toLowerCase() === email)) {
+                    notifyStatus('This email is already registered. Please Log In.', 'error');
+                    return;
+                }
+
+                const newUser = {
+                    id: 'USR-' + Math.floor(1000 + Math.random() * 9000),
+                    name: name,
+                    email: email,
+                    phone: phone,
+                    password: password,
+                    usdt: SIGNUP_BONUS_USDT,
+                    holdings: createZeroHoldings(),
+                    status: 'Active'
+                };
+
+                users.unshift(newUser);
+                session = { role: 'user', userId: newUser.id };
+                activeUserTab = 'markets';
+                persistState();
+                event.target.reset();
+                syncShellVisibility();
+                await syncUserToSupabase(newUser);
+                notifyStatus('Account created for ' + newUser.email + ' with $10.00 USDT bonus.', 'success');
+            } catch (err) {
+                notifyStatus('Sign up error: ' + err.message, 'error');
+            }
+        }
+
+        /* =====================================================================
+           8. USER TRADING DASHBOARD (MARKETS, SVG CHARTS, ORDERS & PORTFOLIO)
+           ===================================================================== */
+        function switchUserTab(tab) {
+            const allowed = ['markets', 'trade', 'portfolio'];
+            activeUserTab = allowed.includes(tab) ? tab : 'markets';
+            const user = getActiveUser();
+            if (user) renderUserDashboard(user);
+            notifyStatus('Opened ' + activeUserTab.toUpperCase(), 'info');
+        }
+
+        function renderUserDashboard(user) {
+            ensureUserHoldings(user);
+            document.getElementById('header-usdt').textContent = formatUsd(user.usdt);
+            document.getElementById('header-user-badge').textContent = user.email + ' • ' + user.phone;
+            document.getElementById('user-session-line').textContent = 'Trader: ' + user.name + ' (' + user.email + ' | ' + user.phone + ') • Status: ' + user.status;
+            document.getElementById('user-profile-summary').textContent = 'Account: ' + user.email + ' • Phone: ' + user.phone + ' • Welcome bonus: $10.00 USDT • Starting crypto: $0.00.';
+
+            const banner = document.getElementById('user-halt-banner');
+            const halts = [];
+            if (switches.buyHalted) halts.push('BUY Orders Halted');
+            if (switches.sellHalted) halts.push('SELL Orders Halted');
+            if (switches.depositHalted) halts.push('Deposits Halted');
+            if (switches.withdrawHalted) halts.push('Withdrawals Halted');
+            if (halts.length > 0) {
+                banner.textContent = 'Exchange Notice: ' + halts.join(' • ');
+                banner.classList.remove('hidden');
+            } else {
+                banner.classList.add('hidden');
+            }
+
+            ['markets', 'trade', 'portfolio'].forEach(t => {
+                const sec = document.getElementById('user-view-' + t);
+                const btn = document.getElementById('utab-' + t);
+                if (sec) {
+                    if (t === activeUserTab) sec.classList.remove('hidden');
+                    else sec.classList.add('hidden');
+                }
+                if (btn) {
+                    if (t === activeUserTab) btn.classList.add('active');
+                    else btn.classList.remove('active');
+                }
+            });
+
+            if (activeUserTab === 'markets') renderMarkets();
+            else if (activeUserTab === 'trade') renderTradeTerminal(user);
+            else if (activeUserTab === 'portfolio') renderPortfolio(user);
+        }
+
+        const SVG_NS = 'http://www.w3.org/2000/svg';
+
+        function createSvgEl(tag, attrs) {
+            const el = document.createElementNS(SVG_NS, tag);
+            Object.keys(attrs || {}).forEach(k => el.setAttribute(k, String(attrs[k])));
+            return el;
+        }
+
+        function buildSparklineSvg(values, positive) {
+            const w = 96;
+            const h = 28;
+            const svg = createSvgEl('svg', {
+                width: w,
+                height: h,
+                viewBox: '0 0 ' + w + ' ' + h,
+                style: 'display:inline-block; vertical-align:middle;'
+            });
+            const arr = Array.isArray(values) && values.length > 1 ? values : [1, 1.01];
+            const minV = Math.min(...arr);
+            const maxV = Math.max(...arr);
+            const span = maxV - minV || 1;
+            const pts = arr.map((v, i) => {
+                const x = 3 + (i / (arr.length - 1)) * (w - 6);
+                const y = h - 4 - ((v - minV) / span) * (h - 8);
+                return x.toFixed(1) + ',' + y.toFixed(1);
+            }).join(' ');
+
+            svg.appendChild(createSvgEl('polyline', {
+                fill: 'none',
+                stroke: positive ? '#0ecb81' : '#f6465d',
+                'stroke-width': '2',
+                'stroke-linecap': 'round',
+                'stroke-linejoin': 'round',
+                points: pts
+            }));
+            return svg.outerHTML;
+        }
+
+        function renderMarkets() {
+            const tbody = document.getElementById('markets-tbody');
+            if (!tbody) return;
+
+            tbody.innerHTML = pairs.map(p => {
+                const pos = p.change24h >= 0;
+                return `
+                    <tr>
+                        <td>
+                            <strong style="color:#ffffff;">${p.symbol}</strong><span class="muted">/USDT</span>
+                            <div class="muted">${p.name}${p.halted ? ' • Halted' : ''}</div>
+                        </td>
+                        <td class="text-right mono" style="font-weight:800; color:#ffffff;">${formatPrice(p.price)}</td>
+                        <td class="text-right mono ${pos ? 'up' : 'down'}" style="font-weight:800;">${pos ? '+' : ''}${p.change24h.toFixed(2)}%</td>
+                        <td class="text-right mono muted">${formatPrice(p.high24h)} / ${formatPrice(p.low24h)}</td>
+                        <td class="text-right">${buildSparklineSvg(p.history, pos)}</td>
+                        <td class="text-right">
+                            <button type="button" class="btn btn-sm btn-gold" onclick="openPairInTrade('${p.id}')">Trade</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function openPairInTrade(pairId) {
+            selectedPairId = pairId;
+            chartHoverIndex = null;
+            switchUserTab('trade');
+        }
+
+        function getSelectedPair() {
+            return pairs.find(p => p.id === selectedPairId) || pairs[0];
+        }
+
+        function selectPair(pairId) {
+            selectedPairId = pairId;
+            chartHoverIndex = null;
+            renderTradeTerminal();
+            notifyStatus('Selected ' + getSelectedPair().symbol + '/USDT', 'info');
+        }
+
+        function changeTimeframe(tf) {
+            currentTimeframe = tf;
+            chartHoverIndex = null;
+            document.querySelectorAll('.tf-btn').forEach(btn => {
+                if (btn.getAttribute('data-tf') === tf) btn.classList.add('btn-gold');
+                else btn.classList.remove('btn-gold');
+            });
+            drawPriceChart();
+            notifyStatus('Timeframe: ' + tf, 'info');
+        }
+
+        function computeSeriesForPair(pair) {
+            const hist = Array.isArray(pair.history) && pair.history.length > 1 ? pair.history : [pair.price * 0.99, pair.price];
+            const tfMult = currentTimeframe === '1H' ? 1 : currentTimeframe === '24H' ? 1.5 : currentTimeframe === '7D' ? 2.2 : 3.2;
+            const series = [];
+            const pts = 24;
+            for (let i = 0; i < pts; i++) {
+                const idx = Math.min(hist.length - 1, Math.floor((i / (pts - 1)) * (hist.length - 1)));
+                const wave = Math.sin(i * 0.7) * (pair.price * 0.0028 * tfMult);
+                series.push(i === pts - 1 ? pair.price : Math.max(0.0001, hist[idx] + wave));
+            }
+            return series;
+        }
+
+        function drawPriceChart() {
+            const svg = document.getElementById('price-chart-svg');
+            const tooltip = document.getElementById('chart-hover-tooltip');
+            if (!svg) return;
+
+            const pair = getSelectedPair();
+            const series = computeSeriesForPair(pair);
+            const w = 780;
+            const h = 310;
+            const padL = 14;
+            const padR = 84;
+            const padT = 18;
+            const padB = 24;
+            const plotW = w - padL - padR;
+            const plotH = h - padT - padB;
+
+            const minVal = Math.min(...series);
+            const maxVal = Math.max(...series);
+            const range = maxVal - minVal || pair.price * 0.01 || 1;
+            const up = series[series.length - 1] >= series[0];
+            const strokeColor = up ? '#0ecb81' : '#f6465d';
+            const fillColor = up ? 'rgba(14, 203, 129, 0.14)' : 'rgba(246, 70, 93, 0.14)';
+
+            const coords = series.map((val, i) => ({
+                val: val,
+                idx: i,
+                x: padL + (i / (series.length - 1)) * plotW,
+                y: padT + plotH - ((val - minVal) / range) * plotH
+            }));
+
+            while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+            for (let r = 0; r <= 4; r++) {
+                const y = padT + (r / 4) * plotH;
+                svg.appendChild(createSvgEl('line', {
+                    x1: padL,
+                    y1: y.toFixed(1),
+                    x2: padL + plotW,
+                    y2: y.toFixed(1),
+                    stroke: 'rgba(41, 49, 61, 0.75)',
+                    'stroke-width': '1'
+                }));
+                const tickPrice = maxVal - (r / 4) * range;
+                const lbl = createSvgEl('text', {
+                    x: (padL + plotW + 8).toFixed(1),
+                    y: (y + 4).toFixed(1),
+                    fill: '#8b95a5',
+                    'font-size': '11',
+                    'font-family': 'monospace'
+                });
+                lbl.textContent = formatPrice(tickPrice);
+                svg.appendChild(lbl);
+            }
+
+            const linePts = coords.map(pt => pt.x.toFixed(1) + ',' + pt.y.toFixed(1)).join(' ');
+            const areaPts = linePts + ' ' + coords[coords.length - 1].x.toFixed(1) + ',' + (padT + plotH).toFixed(1) + ' ' + coords[0].x.toFixed(1) + ',' + (padT + plotH).toFixed(1);
+
+            svg.appendChild(createSvgEl('polygon', {
+                points: areaPts,
+                fill: fillColor
+            }));
+
+            svg.appendChild(createSvgEl('polyline', {
+                fill: 'none',
+                stroke: strokeColor,
+                'stroke-width': '2.5',
+                'stroke-linecap': 'round',
+                'stroke-linejoin': 'round',
+                points: linePts
+            }));
+
+            const activeIdx = (typeof chartHoverIndex === 'number' && chartHoverIndex >= 0 && chartHoverIndex < coords.length)
+                ? chartHoverIndex
+                : coords.length - 1;
+            const pt = coords[activeIdx];
+
+            svg.appendChild(createSvgEl('line', {
+                x1: pt.x.toFixed(1),
+                y1: padT,
+                x2: pt.x.toFixed(1),
+                y2: (padT + plotH).toFixed(1),
+                stroke: 'rgba(0, 210, 255, 0.45)',
+                'stroke-dasharray': '4 3',
+                'stroke-width': '1'
+            }));
+
+            svg.appendChild(createSvgEl('circle', {
+                cx: pt.x.toFixed(1),
+                cy: pt.y.toFixed(1),
+                r: '4.5',
+                fill: '#00d2ff',
+                stroke: '#0b0e11',
+                'stroke-width': '2'
+            }));
+
+            if (tooltip) {
+                tooltip.textContent = pair.symbol + '/USDT [' + currentTimeframe + ' #' + (activeIdx + 1) + ']: ' + formatPrice(pt.val);
+            }
+        }
+
+        function bindSvgChartHover() {
+            const svg = document.getElementById('price-chart-svg');
+            if (!svg) return;
+            const updateIdxFromClientX = clientX => {
+                const rect = svg.getBoundingClientRect();
+                if (!rect.width) return;
+                const relX = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+                chartHoverIndex = Math.round(relX * 23);
+                drawPriceChart();
+            };
+            svg.addEventListener('mousemove', e => updateIdxFromClientX(e.clientX));
+            svg.addEventListener('touchmove', e => {
+                if (e.touches && e.touches[0]) updateIdxFromClientX(e.touches[0].clientX);
+            }, { passive: true });
+            svg.addEventListener('mouseleave', () => {
+                chartHoverIndex = null;
+                drawPriceChart();
+            });
+        }
+
+        function setSide(side) {
+            orderSide = side === 'sell' ? 'sell' : 'buy';
+            updateOrderTicket();
+            notifyStatus('Order side: ' + orderSide.toUpperCase(), 'info');
+        }
+
+        function setOrderByPercent(pct) {
+            const pair = getSelectedPair();
+            const user = getActiveUser();
+            if (!user) return;
+            const inp = document.getElementById('trade-amount-input');
+            if (!inp) return;
+            if (orderSide === 'buy') {
+                inp.value = Number(((user.usdt * pct) / 100).toFixed(2)) || '';
+            } else {
+                const held = Number(user.holdings[pair.symbol]) || 0;
+                inp.value = Number(((held * pct) / 100).toFixed(6)) || '';
+            }
+            refreshOrderPreview();
+        }
+
+        function refreshOrderPreview() {
+            const pair = getSelectedPair();
+            const amt = Number(document.getElementById('trade-amount-input').value) || 0;
+            const outEl = document.getElementById('trade-estimated-val');
+            if (!outEl) return;
+            if (orderSide === 'buy') {
+                const qty = pair.price > 0 ? amt / pair.price : 0;
+                outEl.textContent = formatQty(qty) + ' ' + pair.symbol;
+            } else {
+                outEl.textContent = formatUsd(amt * pair.price);
+            }
+        }
+
+        function updateOrderTicket() {
+            const pair = getSelectedPair();
+            const user = getActiveUser();
+            if (!user) return;
+            const buyBtn = document.getElementById('buy-side-btn');
+            const sellBtn = document.getElementById('sell-side-btn');
+            const lbl = document.getElementById('trade-input-label');
+            const avail = document.getElementById('trade-available-val');
+            const subBtn = document.getElementById('trade-submit-btn');
+
+            if (buyBtn) buyBtn.className = orderSide === 'buy' ? 'btn btn-green' : 'btn';
+            if (sellBtn) sellBtn.className = orderSide === 'sell' ? 'btn btn-red' : 'btn';
+
+            if (orderSide === 'buy') {
+                if (lbl) lbl.textContent = 'Amount (USDT)';
+                if (avail) avail.textContent = formatQty(user.usdt) + ' USDT';
+                if (subBtn) {
+                    subBtn.className = 'btn btn-green';
+                    subBtn.textContent = 'Buy ' + pair.symbol;
+                }
+            } else {
+                const held = Number(user.holdings[pair.symbol]) || 0;
+                if (lbl) lbl.textContent = 'Quantity (' + pair.symbol + ')';
+                if (avail) avail.textContent = formatQty(held) + ' ' + pair.symbol;
+                if (subBtn) {
+                    subBtn.className = 'btn btn-red';
+                    subBtn.textContent = 'Sell ' + pair.symbol;
+                }
+            }
+            refreshOrderPreview();
+        }
+
+        async function executeOrder(event) {
+            event.preventDefault();
+            try {
+                const user = getActiveUser();
+                if (!user) return;
+                const pair = getSelectedPair();
+
+                if (user.status === 'Suspended') {
+                    notifyStatus('Account is suspended. Trading is disabled.', 'error');
+                    return;
+                }
+                if (pair.halted) {
+                    notifyStatus(pair.symbol + '/USDT trading is halted.', 'error');
+                    return;
+                }
+                if (orderSide === 'buy' && switches.buyHalted) {
+                    notifyStatus('BUY orders are currently halted.', 'error');
+                    return;
+                }
+                if (orderSide === 'sell' && switches.sellHalted) {
+                    notifyStatus('SELL orders are currently halted.', 'error');
+                    return;
+                }
+
+                const amount = Number(document.getElementById('trade-amount-input').value);
+                if (!amount || amount <= 0) {
+                    notifyStatus('Enter a valid amount greater than zero.', 'error');
+                    return;
+                }
+
+                if (orderSide === 'buy') {
+                    if (amount > user.usdt) {
+                        notifyStatus('Insufficient USDT balance.', 'error');
+                        return;
+                    }
+                    const qty = amount / pair.price;
+                    user.usdt = Math.max(0, Number((user.usdt - amount).toFixed(4)));
+                    user.holdings[pair.symbol] = Number(((Number(user.holdings[pair.symbol]) || 0) + qty).toFixed(6));
+
+                    recentTrades.unshift({
+                        time: new Date().toTimeString().slice(0, 8),
+                        pair: pair.symbol + '/USDT',
+                        side: 'BUY',
+                        price: pair.price,
+                        qty: qty,
+                        total: amount
+                    });
+
+                    persistState();
+                    document.getElementById('trade-amount-input').value = '';
+                    renderUserDashboard(user);
+                    await syncUserToSupabase(user);
+                    notifyStatus('Bought ' + formatQty(qty) + ' ' + pair.symbol + ' for ' + formatUsd(amount), 'success');
+                } else {
+                    const held = Number(user.holdings[pair.symbol]) || 0;
+                    if (amount > held) {
+                        notifyStatus('Insufficient ' + pair.symbol + ' balance.', 'error');
+                        return;
+                    }
+                    const usdtReceived = amount * pair.price;
+                    user.holdings[pair.symbol] = Number((held - amount).toFixed(6));
+                    user.usdt = Number((user.usdt + usdtReceived).toFixed(4));
+
+                    recentTrades.unshift({
+                        time: new Date().toTimeString().slice(0, 8),
+                        pair: pair.symbol + '/USDT',
+                        side: 'SELL',
+                        price: pair.price,
+                        qty: amount,
+                        total: usdtReceived
+                    });
+
+                    persistState();
+                    document.getElementById('trade-amount-input').value = '';
+                    renderUserDashboard(user);
+                    await syncUserToSupabase(user);
+                    notifyStatus('Sold ' + formatQty(amount) + ' ' + pair.symbol + ' for ' + formatUsd(usdtReceived), 'success');
+                }
+            } catch (err) {
+                notifyStatus('Trade error: ' + err.message, 'error');
+            }
+        }
+
+        function renderTradeTerminal(activeUser) {
+            const user = activeUser || getActiveUser();
+            if (!user) return;
+            const pair = getSelectedPair();
+            const sel = document.getElementById('pair-selector');
+            if (sel) {
+                sel.innerHTML = pairs.map(p => `<option value="${p.id}" ${p.id === pair.id ? 'selected' : ''}>${p.symbol}/USDT (${p.name})</option>`).join('');
+            }
+
+            const heading = document.getElementById('chart-heading');
+            if (heading) heading.textContent = pair.symbol + '/USDT Interactive Chart (' + currentTimeframe + ')';
+
+            const pxEl = document.getElementById('terminal-price');
+            if (pxEl) pxEl.textContent = formatPrice(pair.price);
+
+            const chgEl = document.getElementById('terminal-change');
+            if (chgEl) {
+                const up = pair.change24h >= 0;
+                chgEl.textContent = (up ? '+' : '') + pair.change24h.toFixed(2) + '%';
+                chgEl.className = 'mono ' + (up ? 'up' : 'down');
+            }
+
+            const stEl = document.getElementById('terminal-pair-status');
+            if (stEl) {
+                const halted = pair.halted || (orderSide === 'buy' && switches.buyHalted) || (orderSide === 'sell' && switches.sellHalted);
+                stEl.innerHTML = halted ? '<span class="badge badge-red">Halted</span>' : '<span class="badge badge-green">Active</span>';
+            }
+
+            drawPriceChart();
+            updateOrderTicket();
+
+            const tbody = document.getElementById('recent-trades-tbody');
+            if (tbody) {
+                if (recentTrades.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="muted" style="text-align:center; padding:14px;">No trades executed yet.</td></tr>';
+                } else {
+                    tbody.innerHTML = recentTrades.slice(0, 12).map(t => `
+                        <tr>
+                            <td class="muted">${t.time}</td>
+                            <td><strong>${t.pair}</strong></td>
+                            <td class="${t.side === 'BUY' ? 'up' : 'down'}" style="font-weight:800;">${t.side}</td>
+                            <td class="text-right">${formatPrice(t.price)}</td>
+                            <td class="text-right">${formatQty(t.qty)}</td>
+                            <td class="text-right">${formatUsd(t.total)}</td>
+                        </tr>
+                    `).join('');
+                }
+            }
+        }
+
+        function computeTotalEquity(user) {
+            let total = Number(user.usdt) || 0;
+            Object.keys(user.holdings || {}).forEach(sym => {
+                const qty = Number(user.holdings[sym]) || 0;
+                const pair = pairs.find(p => p.symbol === sym);
+                if (pair && qty > 0) {
+                    total += qty * pair.price;
+                }
+            });
+            return total;
+        }
+
+        async function submitWalletAppeal(event, type) {
+            event.preventDefault();
+            try {
+                if (type === 'Deposit' && switches.depositHalted) {
+                    notifyStatus('Deposit appeals are currently halted.', 'error');
+                    return;
+                }
+                if (type === 'Withdrawal' && switches.withdrawHalted) {
+                    notifyStatus('Withdrawal appeals are currently halted.', 'error');
+                    return;
+                }
+
+                const user = getActiveUser();
+                if (!user) return;
+                if (user.status === 'Suspended') {
+                    notifyStatus('Account is suspended.', 'error');
+                    return;
+                }
+
+                const isDep = type === 'Deposit';
+                const amount = Number(document.getElementById(isDep ? 'dep-amount' : 'wdr-amount').value);
+                const ref = document.getElementById(isDep ? 'dep-ref' : 'wdr-dest').value.trim();
+
+                if (!amount || amount <= 0) {
+                    notifyStatus('Enter a valid amount greater than zero.', 'error');
+                    return;
+                }
+                if (!ref) {
+                    notifyStatus('Enter a payment reference or destination address.', 'error');
+                    return;
+                }
+
+                if (!isDep) {
+                    if (amount > user.usdt) {
+                        notifyStatus('Insufficient USDT balance for withdrawal.', 'error');
+                        return;
+                    }
+                    user.usdt = Math.max(0, Number((user.usdt - amount).toFixed(4)));
+                }
+
+                const appeal = {
+                    id: (isDep ? 'DEP-' : 'WDR-') + Math.floor(1000 + Math.random() * 9000),
+                    type: type,
+                    userId: user.id,
+                    userName: user.name,
+                    userEmail: user.email,
+                    userPhone: user.phone,
+                    amount: Number(amount.toFixed(4)),
+                    ref: ref,
+                    status: 'Pending'
+                };
+
+                appeals.unshift(appeal);
+                persistState();
+                event.target.reset();
+                renderUserDashboard(user);
+                await Promise.all([syncUserToSupabase(user), syncAppealToSupabase(appeal)]);
+                notifyStatus(type + ' appeal ' + appeal.id + ' submitted.', 'success');
+            } catch (err) {
+                notifyStatus('Appeal error: ' + err.message, 'error');
+            }
+        }
+
+        function renderPortfolio(activeUser) {
+            const user = activeUser || getActiveUser();
+            if (!user) return;
+            ensureUserHoldings(user);
+            const equity = computeTotalEquity(user);
+
+            document.getElementById('pf-total-equity').textContent = formatUsd(equity);
+            document.getElementById('pf-usdt-balance').textContent = formatUsd(user.usdt);
+            document.getElementById('pf-account-name').textContent = user.email + ' (' + user.phone + ')';
+
+            const holdBody = document.getElementById('pf-holdings-tbody');
+            if (holdBody) {
+                const rows = [
+                    `<tr>
+                        <td><strong>USDT</strong> <span class="muted">Tether</span></td>
+                        <td class="text-right">${formatQty(user.usdt)}</td>
+                        <td class="text-right">$1.00</td>
+                        <td class="text-right up" style="font-weight:800;">${formatUsd(user.usdt)}</td>
+                    </tr>`
+                ];
+                pairs.forEach(p => {
+                    const q = Number(user.holdings[p.symbol]) || 0;
+                    rows.push(`
+                        <tr>
+                            <td><strong>${p.symbol}</strong> <span class="muted">${p.name}</span></td>
+                            <td class="text-right">${formatQty(q)}</td>
+                            <td class="text-right">${formatPrice(p.price)}</td>
+                            <td class="text-right">${formatUsd(q * p.price)}</td>
+                        </tr>
+                    `);
+                });
+                holdBody.innerHTML = rows.join('');
+            }
+
+            const appBody = document.getElementById('pf-appeals-tbody');
+            if (appBody) {
+                const mine = appeals.filter(a => a.userId === user.id || a.userEmail === user.email.toLowerCase());
+                if (mine.length === 0) {
+                    appBody.innerHTML = '<tr><td colspan="5" class="muted" style="text-align:center; padding:14px;">No deposit or withdrawal appeals submitted yet.</td></tr>';
+                } else {
+                    appBody.innerHTML = mine.map(a => {
+                        const cls = a.status === 'Approved' ? 'badge-green' : a.status === 'Rejected' ? 'badge-red' : 'badge-gold';
+                        return `
+                            <tr>
+                                <td>${a.id}</td>
+                                <td>${a.type}</td>
+                                <td class="text-right">${formatUsd(a.amount)}</td>
+                                <td>${a.ref}</td>
+                                <td><span class="badge ${cls}">${a.status}</span></td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            }
+        }
+
+        /* =====================================================================
+           9. SUPER ADMIN CONTROL DASHBOARD
+           ===================================================================== */
+        function switchAdminSub(sub) {
+            currentAdminSub = sub;
+            ['users', 'deposits', 'withdrawals', 'controls'].forEach(s => {
+                const sec = document.getElementById('admin-sub-' + s);
+                const btn = document.getElementById('sub-btn-' + s);
+                if (sec) {
+                    if (s === sub) sec.classList.remove('hidden');
+                    else sec.classList.add('hidden');
+                }
+                if (btn) {
+                    if (s === sub) btn.classList.add('active');
+                    else btn.classList.remove('active');
+                }
+            });
+            renderAdminDashboard();
+        }
+
+        async function saveSupabaseConfig(event) {
+            event.preventDefault();
+            const urlVal = document.getElementById('sb-url-input').value.trim();
+            const keyVal = document.getElementById('sb-key-input').value.trim();
+            supabaseConfig = {
+                url: urlVal || SUPABASE_URL,
+                anonKey: keyVal || SUPABASE_ANON_KEY
+            };
+            persistState();
+
+            if (!isSupabaseConfigured()) {
+                setCloudFallback('Local/in-memory storage active');
+                renderAdminDashboard();
+                notifyStatus('Saved config; enter a valid https://*.supabase.co URL & anon key to sync.', 'info');
+                return;
+            }
+
+            await syncNowFromAdmin();
+            closeCloudConfigModal();
+        }
+
+        function clearSupabaseConfig() {
+            supabaseConfig = { url: SUPABASE_URL, anonKey: SUPABASE_ANON_KEY };
+            persistState();
+            setCloudFallback('Local/in-memory storage active');
+            renderAdminDashboard();
+            notifyStatus('Reverted to local/in-memory fallback', 'info');
+        }
+
+        async function adjustUserBalance(userId, delta) {
+            const u = users.find(x => x.id === userId);
+            if (!u) return;
+            u.usdt = Math.max(0, Number(((Number(u.usdt) || 0) + delta).toFixed(4)));
+            persistState();
+            renderAdminDashboard();
+            await syncUserToSupabase(u);
+            notifyStatus('Updated ' + u.email + ' USDT balance (' + (delta >= 0 ? '+' : '') + delta.toFixed(2) + ')', 'success');
+        }
+
+        async function setUserCustomBalance(userId) {
+            const inp = document.getElementById('bal-input-' + userId);
+            if (!inp) return;
+            const val = Number(inp.value);
+            if (isNaN(val) || val < 0) {
+                notifyStatus('Enter a valid non-negative balance.', 'error');
+                return;
+            }
+            const u = users.find(x => x.id === userId);
+            if (!u) return;
+            u.usdt = Number(val.toFixed(4));
+            persistState();
+            renderAdminDashboard();
+            await syncUserToSupabase(u);
+            notifyStatus('Set ' + u.email + ' USDT balance to ' + formatUsd(u.usdt), 'success');
+        }
+
+        async function setUserCoinHolding(userId) {
+            const symSel = document.getElementById('coin-sym-' + userId);
+            const qtyInp = document.getElementById('coin-qty-' + userId);
+            if (!symSel || !qtyInp) return;
+            const sym = symSel.value;
+            const qty = Number(qtyInp.value);
+            if (isNaN(qty) || qty < 0) {
+                notifyStatus('Enter a valid non-negative coin quantity.', 'error');
+                return;
+            }
+            const u = users.find(x => x.id === userId);
+            if (!u) return;
+            ensureUserHoldings(u);
+            u.holdings[sym] = Number(qty.toFixed(6));
+            persistState();
+            renderAdminDashboard();
+            await syncUserToSupabase(u);
+            notifyStatus('Set ' + u.email + ' ' + sym + ' balance to ' + formatQty(u.holdings[sym]), 'success');
+        }
+
+        async function toggleUserActiveSuspended(userId) {
+            const u = users.find(x => x.id === userId);
+            if (!u) return;
+            u.status = u.status === 'Suspended' ? 'Active' : 'Suspended';
+            persistState();
+            renderAdminDashboard();
+            await syncUserToSupabase(u);
+            notifyStatus(u.email + ' status set to ' + u.status, 'info');
+        }
+
+        async function deleteUserRecord(userId) {
+            const u = users.find(x => x.id === userId);
+            if (!u) return;
+            users = users.filter(x => x.id !== userId);
+            appeals = appeals.filter(a => a.userId !== userId);
+            if (session && session.role === 'user' && session.userId === userId) {
+                session = null;
+            }
+            persistState();
+            renderAdminDashboard();
+            await deleteUserFromSupabase(userId);
+            notifyStatus('Removed trader ' + u.email, 'info');
+        }
+
+        async function decideAppeal(appealId, decision) {
+            const ap = appeals.find(a => a.id === appealId);
+            if (!ap || ap.status !== 'Pending') return;
+
+            const u = users.find(x => x.id === ap.userId || x.email.toLowerCase() === (ap.userEmail || '').toLowerCase());
+            if (decision === 'Approve') {
+                ap.status = 'Approved';
+                if (ap.type === 'Deposit' && u) {
+                    u.usdt = Number(((Number(u.usdt) || 0) + ap.amount).toFixed(4));
+                }
+            } else {
+                ap.status = 'Rejected';
+                if (ap.type === 'Withdrawal' && u) {
+                    u.usdt = Number(((Number(u.usdt) || 0) + ap.amount).toFixed(4));
+                }
+            }
+
+            persistState();
+            renderAdminDashboard();
+            await Promise.all([syncAppealToSupabase(ap), u ? syncUserToSupabase(u) : Promise.resolve(false)]);
+            notifyStatus(ap.type + ' appeal ' + ap.id + ' ' + ap.status, 'success');
+        }
+
+        function toggleGlobalSwitch(key) {
+            switches[key] = !switches[key];
+            persistState();
+            renderAdminDashboard();
+            notifyStatus(key + ': ' + (switches[key] ? 'HALTED' : 'ACTIVE'), 'info');
+        }
+
+        function addNewCoinPair(event) {
+            event.preventDefault();
+            const symbol = document.getElementById('new-coin-symbol').value.trim().toUpperCase();
+            const name = document.getElementById('new-coin-name').value.trim();
+            const price = Number(document.getElementById('new-coin-price').value);
+
+            if (!symbol || !name || !price || price <= 0) {
+                notifyStatus('Enter valid coin symbol, name, and price.', 'error');
+                return;
+            }
+            if (pairs.some(p => p.symbol === symbol)) {
+                notifyStatus(symbol + '/USDT already exists.', 'error');
+                return;
+            }
+
+            pairs.push({
+                id: symbol.toLowerCase(),
+                symbol: symbol,
+                name: name,
+                price: price,
+                change24h: 0.00,
+                high24h: Number((price * 1.03).toFixed(4)),
+                low24h: Number((price * 0.97).toFixed(4)),
+                halted: false,
+                history: [price * 0.99, price * 0.995, price * 1.002, price]
+            });
+
+            users.forEach(u => {
+                ensureUserHoldings(u);
+                if (typeof u.holdings[symbol] !== 'number') u.holdings[symbol] = 0;
+            });
+
+            persistState();
+            event.target.reset();
+            renderAdminDashboard();
+            notifyStatus('Added ' + symbol + '/USDT at ' + formatPrice(price), 'success');
+        }
+
+        function updatePairPrice(pairId) {
+            const inp = document.getElementById('price-input-' + pairId);
+            if (!inp) return;
+            const px = Number(inp.value);
+            if (!px || px <= 0) {
+                notifyStatus('Enter a valid price greater than zero.', 'error');
+                return;
+            }
+            const p = pairs.find(x => x.id === pairId);
+            if (!p) return;
+            p.price = px;
+            if (px > p.high24h) p.high24h = px;
+            if (px < p.low24h) p.low24h = px;
+            p.history.push(px);
+            if (p.history.length > 24) p.history.shift();
+            persistState();
+            renderAdminDashboard();
+            notifyStatus(p.symbol + '/USDT price updated to ' + formatPrice(px), 'success');
+        }
+
+        function togglePairHalt(pairId) {
+            const p = pairs.find(x => x.id === pairId);
+            if (!p) return;
+            p.halted = !p.halted;
+            persistState();
+            renderAdminDashboard();
+            notifyStatus(p.symbol + '/USDT ' + (p.halted ? 'HALTED' : 'ACTIVE'), 'info');
+        }
+
+        function updateAdminPassword(event) {
+            event.preventDefault();
+            const oldPass = document.getElementById('old-admin-pass').value;
+            const newPass = document.getElementById('new-admin-pass').value;
+
+            if (oldPass !== adminAuth.password) {
+                notifyStatus('Current Super Admin password is incorrect.', 'error');
+                return;
+            }
+            if (!newPass || newPass.length < 8) {
+                notifyStatus('New password must be at least 8 characters.', 'error');
+                return;
+            }
+
+            adminAuth.password = newPass;
+            persistState();
+            event.target.reset();
+            syncAllEyeIcons();
+            notifyStatus('Super Admin password updated.', 'success');
+        }
+
+        function resetPlatformData() {
+            pairs = createDefaultPairs();
+            switches = { buyHalted: false, sellHalted: false, depositHalted: false, withdrawHalted: false };
+            adminAuth = { password: DEFAULT_ADMIN_PASSWORD };
+            users = [];
+            appeals = [];
+            recentTrades = [];
+            lockoutEnd = 0;
+            failedCount = 0;
+            persistState();
+            renderAdminDashboard();
+            notifyStatus('Platform reset (0 traders, 0 appeals)', 'info');
+        }
+
+        function renderAppealRows(rows, tbodyId, emptyMessage) {
+            const tbody = document.getElementById(tbodyId);
+            if (!tbody) return;
+            if (rows.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="muted" style="text-align:center; padding:16px;">${emptyMessage}</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = rows.map(a => {
+                const cls = a.status === 'Approved' ? 'badge-green' : a.status === 'Rejected' ? 'badge-red' : 'badge-gold';
+                return `
+                    <tr>
+                        <td>${a.id}</td>
+                        <td><strong>${a.userName}</strong></td>
+                        <td style="color:var(--cyan);">${a.userEmail}</td>
+                        <td>${a.userPhone}</td>
+                        <td class="text-right" style="font-weight:800;">${formatUsd(a.amount)}</td>
+                        <td>${a.ref}</td>
+                        <td><span class="badge ${cls}">${a.status}</span></td>
+                        <td class="text-right">
+                            ${a.status === 'Pending'
+                                ? `<button type="button" class="btn btn-sm btn-green" onclick="decideAppeal('${a.id}','Approve')">Approve</button>
+                                   <button type="button" class="btn btn-sm btn-red" onclick="decideAppeal('${a.id}','Reject')">Reject</button>`
+                                : '<span class="muted">Resolved</span>'}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function summarizeHoldings(user) {
+            ensureUserHoldings(user);
+            const active = Object.keys(user.holdings)
+                .filter(sym => (Number(user.holdings[sym]) || 0) > 0)
+                .map(sym => formatQty(user.holdings[sym]) + ' ' + sym);
+            return active.length > 0 ? active.join(', ') : '$0.00 Crypto';
+        }
+
+        function renderAdminDashboard() {
+            renderCloudIndicators();
+            const urlInp = document.getElementById('sb-url-input');
+            const keyInp = document.getElementById('sb-key-input');
+            if (urlInp && document.activeElement !== urlInp) urlInp.value = supabaseConfig.url || '';
+            if (keyInp && document.activeElement !== keyInp) keyInp.value = supabaseConfig.anonKey || '';
+
+            const realUsers = users.filter(u => isGmailAddress(u.email) && isPhoneValid(u.phone));
+            const realUserIds = new Set(realUsers.map(u => u.id));
+            const realUserEmails = new Set(realUsers.map(u => u.email.toLowerCase()));
+            const belongsToRealUser = a => realUserIds.has(a.userId) || realUserEmails.has((a.userEmail || '').toLowerCase());
+            const depAppeals = appeals.filter(a => a.type === 'Deposit' && belongsToRealUser(a));
+            const wdrAppeals = appeals.filter(a => a.type === 'Withdrawal' && belongsToRealUser(a));
+
+            document.getElementById('adm-count-users').textContent = String(realUsers.length);
+            document.getElementById('adm-count-deposits').textContent = String(depAppeals.length);
+            document.getElementById('adm-count-withdrawals').textContent = String(wdrAppeals.length);
+            document.getElementById('adm-count-pairs').textContent = String(pairs.length);
+
+            const usersTbody = document.getElementById('adm-users-tbody');
+            if (usersTbody) {
+                if (realUsers.length === 0) {
+                    usersTbody.innerHTML = '<tr><td colspan="7" class="muted" style="text-align:center; padding:18px;">No registered @gmail.com + phone traders yet.</td></tr>';
+                } else {
+                    usersTbody.innerHTML = realUsers.map(u => {
+                        ensureUserHoldings(u);
+                        const cls = u.status === 'Active' ? 'badge-green' : 'badge-red';
+                        const coinOpts = pairs.map(p => `<option value="${p.symbol}">${p.symbol}</option>`).join('');
+                        return `
+                            <tr>
+                                <td><strong>${u.name}</strong><div class="muted">${u.id}</div></td>
+                                <td style="color:var(--cyan);">${u.email}</td>
+                                <td>${u.phone}</td>
+                                <td class="text-right" style="font-weight:800; color:var(--gold);">${formatUsd(u.usdt)}</td>
+                                <td>${summarizeHoldings(u)}</td>
+                                <td><span class="badge ${cls}">${u.status}</span></td>
+                                <td class="text-right">
+                                    <button type="button" class="btn btn-sm" onclick="adjustUserBalance('${u.id}', 10)">+$10</button>
+                                    <button type="button" class="btn btn-sm" onclick="adjustUserBalance('${u.id}', -10)">-$10</button>
+                                    <input type="number" step="any" min="0" id="bal-input-${u.id}" class="input-box mono" style="width:74px; display:inline-block; padding:4px 6px; font-size:11px;" value="${Number(u.usdt).toFixed(2)}">
+                                    <button type="button" class="btn btn-sm btn-gold" onclick="setUserCustomBalance('${u.id}')">Set USDT</button>
+                                    <select id="coin-sym-${u.id}" class="input-box mono" style="width:68px; display:inline-block; padding:4px 6px; font-size:11px;">${coinOpts}</select>
+                                    <input type="number" step="any" min="0" id="coin-qty-${u.id}" class="input-box mono" style="width:72px; display:inline-block; padding:4px 6px; font-size:11px;" placeholder="0.00">
+                                    <button type="button" class="btn btn-sm btn-cyan" onclick="setUserCoinHolding('${u.id}')">Set Coin</button>
+                                    <button type="button" class="btn btn-sm" onclick="toggleUserActiveSuspended('${u.id}')">${u.status === 'Suspended' ? 'Activate' : 'Suspend'}</button>
+                                    <button type="button" class="btn btn-sm btn-red" onclick="deleteUserRecord('${u.id}')">Delete</button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            }
+
+            renderAppealRows(depAppeals, 'adm-deposits-tbody', 'No deposit appeals submitted yet.');
+            renderAppealRows(wdrAppeals, 'adm-withdrawals-tbody', 'No withdrawal appeals submitted yet.');
+
+            const bindSwitchBtn = (id, label, halted) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.textContent = label + ': ' + (halted ? 'HALTED' : 'ACTIVE');
+                el.className = halted ? 'btn btn-red' : 'btn btn-green';
+            };
+            bindSwitchBtn('sw-buy', 'Buy', switches.buyHalted);
+            bindSwitchBtn('sw-sell', 'Sell', switches.sellHalted);
+            bindSwitchBtn('sw-deposit', 'Deposits', switches.depositHalted);
+            bindSwitchBtn('sw-withdraw', 'Withdrawals', switches.withdrawHalted);
+
+            const pairsTbody = document.getElementById('adm-pairs-tbody');
+            if (pairsTbody) {
+                pairsTbody.innerHTML = pairs.map(p => `
+                    <tr>
+                        <td><strong>${p.symbol}</strong><span class="muted">/USDT</span></td>
+                        <td class="text-right" style="font-weight:800;">${formatPrice(p.price)}</td>
+                        <td>
+                            <input type="number" step="any" min="0.000001" id="price-input-${p.id}" class="input-box mono" style="width:120px; display:inline-block; padding:5px 8px; font-size:12px;" value="${p.price}">
+                            <button type="button" class="btn btn-sm btn-gold" onclick="updatePairPrice('${p.id}')">Update</button>
+                        </td>
+                        <td>${p.halted ? '<span class="badge badge-red">Halted</span>' : '<span class="badge badge-green">Active</span>'}</td>
+                        <td class="text-right">
+                            <button type="button" class="btn btn-sm ${p.halted ? 'btn-green' : 'btn-red'}" onclick="togglePairHalt('${p.id}')">${p.halted ? 'Resume' : 'Halt'}</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+            syncAllEyeIcons();
+        }
+
+        /* =====================================================================
+           10. LIVE MARKET TICK & BOOTSTRAP
+           ===================================================================== */
+        setInterval(() => {
+            try {
+                pairs.forEach(p => {
+                    const drift = (Math.random() - 0.495) * 0.003;
+                    const nextPx = Math.max(0.0001, Number((p.price * (1 + drift)).toFixed(p.price < 1 ? 4 : 2)));
+                    p.price = nextPx;
+                    p.change24h = Number((p.change24h + drift * 100).toFixed(2));
+                    if (nextPx > p.high24h) p.high24h = nextPx;
+                    if (nextPx < p.low24h) p.low24h = nextPx;
+                    p.history.push(nextPx);
+                    if (p.history.length > 24) p.history.shift();
+                });
+                persistState();
+                if (getActiveUser()) {
+                    if (activeUserTab === 'markets') renderMarkets();
+                    else if (activeUserTab === 'trade') renderTradeTerminal(getActiveUser());
+                    else if (activeUserTab === 'portfolio') renderPortfolio(getActiveUser());
+                }
+            } catch (_err) {
+                // Keep live market loop resilient
+            }
+        }, 3500);
+
+        function focusSuperAdminLogin() {
+            if (isAdminAuthenticated()) {
+                renderAdminDashboard();
+                return;
+            }
+            session = null;
+            persistState();
+            syncShellVisibility();
+            setAuthMode('login');
+            const emailInput = document.getElementById('login-email');
+            if (emailInput) {
+                emailInput.value = ADMIN_EMAIL;
+                emailInput.focus();
+            }
+            notifyStatus('Super Admin login focused', 'info');
+        }
+
+        (function initUnicomApp() {
+            try {
+                loadState();
+                bindPasswordToggles();
+                bindSvgChartHover();
+                syncShellVisibility();
+
+                if (window.location.hash === '#admin') {
+                    focusSuperAdminLogin();
+                }
+
+                window.addEventListener('hashchange', function () {
+                    if (window.location.hash === '#admin') {
+                        focusSuperAdminLogin();
+                    }
+                });
+
+                window.addEventListener('keydown', function (event) {
+                    if ((event.ctrlKey || event.metaKey) && event.shiftKey && String(event.key).toLowerCase() === 'a') {
+                        event.preventDefault();
+                        focusSuperAdminLogin();
+                    }
+                });
+
+                if (isSupabaseConfigured()) {
+                    pullUsersAndAppealsFromSupabase().then(() => {
+                        if (isAdminAuthenticated()) renderAdminDashboard();
+                        else if (getActiveUser()) renderUserDashboard(getActiveUser());
+                    });
+                } else {
+                    setCloudFallback('Local/in-memory storage active');
+                }
+
+                notifyStatus('Unicom initialized', 'success');
+            } catch (err) {
+                notifyStatus('Startup error: ' + err.message, 'error');
+            }
+        })();
+    </script>
 </body>
 </html>
