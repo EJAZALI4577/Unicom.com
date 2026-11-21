@@ -1,0 +1,657 @@
+<!DOCTYPE htm<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Unicom — Global Cryptocurrency Trading Platform</title>
+  <style>
+    :root {
+      --bg-canvas: #0b0e11;
+      --bg-surface: #15191e;
+      --bg-elevated: #1d2229;
+      --bg-input: #242b34;
+      --border-line: #2b323c;
+      --text-main: #eaecef;
+      --text-muted: #8b95a5;
+      --gold: #fcd535;
+      --gold-hover: #ebb912;
+      --cyan: #00d2ff;
+      --green: #0ecb81;
+      --red: #f6465d;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-canvas);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.45;
+      min-height: 100vh;
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    #toast-container {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 400px;
+      width: calc(100% - 28px);
+    }
+
+    .toast-msg {
+      padding: 11px 14px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      font-weight: 700;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: var(--bg-elevated);
+      color: var(--text-main);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.65);
+    }
+
+    .toast-success {
+      background: var(--green);
+      color: #0b0e11;
+    }
+
+    .toast-error {
+      background: var(--red);
+      color: #ffffff;
+    }
+
+    .access-shell {
+      max-width: 600px;
+      margin: 32px auto 48px;
+      padding: 0 16px;
+    }
+
+    .access-hero {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .access-hero h1 {
+      margin: 12px 0 6px;
+      font-size: 26px;
+      font-weight: 900;
+      color: #ffffff;
+    }
+
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-hover));
+      color: #0b0e11;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 17px;
+    }
+
+    .brand-name {
+      font-size: 22px;
+      font-weight: 900;
+      color: #ffffff;
+    }
+
+    .live-badge {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(14, 203, 129, 0.14);
+      color: var(--green);
+      border: 1px solid rgba(14, 203, 129, 0.35);
+    }
+
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-line);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    }
+
+    .access-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .access-tab-btn {
+      padding: 11px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border-line);
+      background: #11151b;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .access-tab-btn.active {
+      background: rgba(252, 213, 53, 0.14);
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    .heading-md {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 800;
+      color: #ffffff;
+    }
+
+    .muted {
+      color: var(--text-muted);
+      font-size: 12.5px;
+    }
+
+    .form-field {
+      margin-bottom: 12px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+    }
+
+    .input-box {
+      width: 100%;
+      padding: 9px 12px;
+      border-radius: 9px;
+      border: 1px solid var(--border-line);
+      background: var(--bg-input);
+      color: #ffffff;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .input-box:focus {
+      border-color: var(--gold);
+    }
+
+    .password-field-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .password-field-wrap .input-box {
+      padding-right: 42px;
+    }
+
+    .eye-toggle-btn {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 30px;
+      height: 30px;
+      border-radius: 7px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .eye-toggle-btn:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .btn {
+      padding: 8px 13px;
+      border-radius: 9px;
+      border: 1px solid var(--border-line);
+      background: var(--bg-elevated);
+      color: var(--text-main);
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-gold {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: #0b0e11;
+      font-weight: 800;
+    }
+
+    .btn-red {
+      background: var(--red);
+      border-color: var(--red);
+      color: #ffffff;
+      font-weight: 800;
+    }
+
+    .badge-green {
+      background: rgba(14, 203, 129, 0.16);
+      color: var(--green);
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .top-bar {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-line);
+      padding: 12px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+  </style>
+</head>
+<body>
+  <div id="toast-container" aria-live="polite"></div>
+
+  <section id="auth-view" class="access-shell">
+    <div class="access-hero">
+      <div style="display:inline-flex; align-items:center; gap:10px;">
+        <div class="brand-mark">U</div>
+        <span class="brand-name">Unicom</span>
+        <span class="live-badge">Global Spot Exchange</span>
+      </div>
+      <h1>Unicom Account Access</h1>
+      <div class="muted">
+        Log in to your trader or administrator account, or sign up with a valid <strong>@gmail.com</strong> address and <strong>phone number</strong> for a <strong>$10.00 USDT</strong> welcome bonus and <strong>$0.00</strong> starting crypto holdings.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="access-tabs">
+        <button type="button" class="access-tab-btn active" id="auth-tab-login" onclick="setAuthMode('login')">Log In</button>
+        <button type="button" class="access-tab-btn" id="auth-tab-signup" onclick="setAuthMode('signup')">Sign Up ($10.00 USDT)</button>
+      </div>
+
+      <form id="unified-login-form" onsubmit="handleUnifiedLogin(event)">
+        <h2 class="heading-md" style="margin-bottom:6px;">Log In to Unicom</h2>
+        <div class="muted" style="margin-bottom:14px;">
+          Traders sign in with <strong>@gmail.com</strong>, <strong>phone number</strong>, and <strong>password</strong>. Super Admin signs in with email and password.
+        </div>
+
+        <div class="form-field">
+          <label class="form-label" for="login-email">Email / Gmail Address</label>
+          <input type="email" id="login-email" class="input-box" placeholder="trader@gmail.com" autocomplete="username" required />
+        </div>
+
+        <div class="form-field">
+          <label class="form-label" for="login-phone">Phone Number (Required for Trader Accounts)</label>
+          <input type="tel" id="login-phone" class="input-box mono" placeholder="+15550109988" autocomplete="tel" />
+        </div>
+
+        <div class="form-field">
+          <label class="form-label" for="login-password">Password</label>
+          <div class="password-field-wrap">
+            <input type="password" id="login-password" class="input-box" placeholder="Enter your password" autocomplete="current-password" required />
+            <button type="button" class="eye-toggle-btn" id="eye-login-password" onclick="togglePasswordVisibility('login-password', 'eye-login-password')" aria-label="Show or hide password"></button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-gold" style="width:100%; padding:11px; font-size:14px;">Log In</button>
+      </form>
+
+      <form id="unified-signup-form" class="hidden" onsubmit="handleUserSignup(event)">
+        <h2 class="heading-md" style="margin-bottom:6px;">Create Trader Account</h2>
+        <div class="muted" style="margin-bottom:14px;">
+          Requires a valid <strong>@gmail.com</strong> address, <strong>phone number</strong>, and <strong>password</strong>.
+        </div>
+
+        <div class="form-field">
+          <label class="form-label" for="signup-name">Full Name</label>
+          <input type="text" id="signup-name" class="input-box" placeholder="Alex Morgan" autocomplete="name" required />
+        </div>
+
+        <div class="form-field">
+          <label class="form-label" for="signup-email">Gmail Address (@gmail.com)</label>
+          <input type="email" id="signup-email" class="input-box" placeholder="alex.morgan@gmail.com" autocomplete="email" required />
+        </div>
+
+        <div class="form-field">
+          <label class="form-label" for="signup-phone">Phone Number</label>
+          <input type="tel" id="signup-phone" class="input-box mono" placeholder="+15550101234" autocomplete="tel" required />
+        </div>
+
+        <div class="form-field">
+          <label class="form-label" for="signup-password">Password</label>
+          <div class="password-field-wrap">
+            <input type="password" id="signup-password" class="input-box" minlength="4" placeholder="Create a password" autocomplete="new-password" required />
+            <button type="button" class="eye-toggle-btn" id="eye-signup-password" onclick="togglePasswordVisibility('signup-password', 'eye-signup-password')" aria-label="Show or hide password"></button>
+          </div>
+        </div>
+
+        <div class="badge-green" style="margin-bottom:12px;">
+          Welcome Bonus: $10.00 USDT • Starting Crypto Holdings: $0.00
+        </div>
+
+        <button type="submit" class="btn btn-gold" style="width:100%; padding:11px; font-size:14px;">Create Account & Start Trading</button>
+      </form>
+    </div>
+  </section>
+
+  <div id="session-view" class="hidden">
+    <header class="top-bar">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div class="brand-mark">U</div>
+        <span class="brand-name" style="font-size:18px;">Unicom</span>
+        <span class="live-badge" id="session-role-badge">Trader</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span id="session-user-label" class="mono" style="color:var(--cyan); font-weight:700;"></span>
+        <span id="session-balance-label" class="mono" style="color:var(--gold); font-weight:800;">$10.00 USDT</span>
+        <button type="button" class="btn btn-red" onclick="logoutToAccess()">Log Out</button>
+      </div>
+    </header>
+
+    <main class="container">
+      <div class="card">
+        <h2 class="heading-md" style="margin-bottom:8px;">Account Active</h2>
+        <p class="muted" id="session-details-text" style="margin:0;"></p>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const ADMIN_EMAIL = "owner@unicom.com";
+    const DEFAULT_ADMIN_PASSWORD = "Unicom@2026#Secure";
+    const SIGNUP_BONUS_USDT = 10.00;
+    const STORAGE_KEY = "unicom_users_v1";
+
+    // Replace with your real Supabase Project URL and Anon Key when ready
+    const SUPABASE_URL = "https://YOUR-PROJECT-ID.supabase.co";
+    const SUPABASE_ANON_KEY = "YOUR-SUPABASE-ANON-KEY";
+
+    const memoryUsers = new Map();
+
+    const SVG_EYE_OPEN = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+    const SVG_EYE_CLOSED = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"></path><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+
+    function notify(message, type = "info") {
+      const container = document.getElementById("toast-container");
+      if (!container) return;
+      const el = document.createElement("div");
+      el.className = "toast-msg " + (type === "success" ? "toast-success" : type === "error" ? "toast-error" : "");
+      el.textContent = message;
+      container.appendChild(el);
+      setTimeout(() => {
+        if (el.parentNode) el.parentNode.removeChild(el);
+      }, 3200);
+    }
+
+    function isGmailAddress(email) {
+      return /^[a-z0-9._%+-]+@gmail\.com$/i.test(String(email || "").trim());
+    }
+
+    function isPhoneValid(phone) {
+      const digits = String(phone || "").replace(/\D/g, "");
+      return digits.length >= 7 && digits.length <= 15;
+    }
+
+    function loadLocalUsers() {
+      try {
+        if (window.localStorage) {
+          const raw = window.localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) return parsed;
+          }
+        }
+      } catch (_e) {}
+      return Array.from(memoryUsers.values());
+    }
+
+    function saveLocalUsers(users) {
+      memoryUsers.clear();
+      users.forEach(u => memoryUsers.set(u.email.toLowerCase(), u));
+      try {
+        if (window.localStorage) {
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+        }
+      } catch (_e) {}
+    }
+
+    function hasSupabaseConfig() {
+      return (
+        SUPABASE_URL.startsWith("https://") &&
+        !SUPABASE_URL.includes("YOUR-PROJECT-ID") &&
+        SUPABASE_ANON_KEY &&
+        !SUPABASE_ANON_KEY.includes("YOUR-SUPABASE-ANON-KEY")
+      );
+    }
+
+    async function syncUserToSupabase(user) {
+      if (!hasSupabaseConfig()) return;
+      try {
+        await fetch(`${SUPABASE_URL.replace(/\/+$/, "")}/rest/v1/users?on_conflict=email`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+            "Prefer": "resolution=merge-duplicates,return=representation"
+          },
+          body: JSON.stringify([{
+            email: user.email,
+            phone: user.phone,
+            usdt_balance: user.usdtBalance,
+            crypto_holdings: user.cryptoHoldings || {},
+            status: user.status || "Active"
+          }])
+        });
+      } catch (_err) {}
+    }
+
+    function setAuthMode(mode) {
+      const isSignup = mode === "signup";
+      document.getElementById("auth-tab-login").classList.toggle("active", !isSignup);
+      document.getElementById("auth-tab-signup").classList.toggle("active", isSignup);
+      document.getElementById("unified-login-form").classList.toggle("hidden", isSignup);
+      document.getElementById("unified-signup-form").classList.toggle("hidden", !isSignup);
+    }
+
+    function togglePasswordVisibility(inputId, btnId) {
+      const input = document.getElementById(inputId);
+      const btn = document.getElementById(btnId);
+      if (!input) return;
+      const show = input.type === "password";
+      input.type = show ? "text" : "password";
+      if (btn) {
+        btn.innerHTML = show ? SVG_EYE_CLOSED : SVG_EYE_OPEN;
+      }
+    }
+
+    function initEyeButtons() {
+      ["eye-login-password", "eye-signup-password"].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.innerHTML = SVG_EYE_OPEN;
+      });
+    }
+
+    function openSessionView(roleLabel, emailText, balanceText, detailText) {
+      document.getElementById("auth-view").classList.add("hidden");
+      document.getElementById("session-view").classList.remove("hidden");
+      document.getElementById("session-role-badge").textContent = roleLabel;
+      document.getElementById("session-user-label").textContent = emailText;
+      document.getElementById("session-balance-label").textContent = balanceText;
+      document.getElementById("session-details-text").textContent = detailText;
+    }
+
+    function logoutToAccess() {
+      document.getElementById("session-view").classList.add("hidden");
+      document.getElementById("auth-view").classList.remove("hidden");
+      setAuthMode("login");
+      notify("Logged out.", "info");
+    }
+
+    async function handleUserSignup(event) {
+      event.preventDefault();
+      const name = document.getElementById("signup-name").value.trim();
+      const email = document.getElementById("signup-email").value.trim().toLowerCase();
+      const phone = document.getElementById("signup-phone").value.trim();
+      const password = document.getElementById("signup-password").value;
+
+      if (!name) {
+        notify("Please enter your full name.", "error");
+        return;
+      }
+      if (!isGmailAddress(email)) {
+        notify("Please use a valid @gmail.com address.", "error");
+        return;
+      }
+      if (!isPhoneValid(phone)) {
+        notify("Please enter a valid phone number.", "error");
+        return;
+      }
+      if (password.length < 4) {
+        notify("Password must be at least 4 characters.", "error");
+        return;
+      }
+
+      const users = loadLocalUsers();
+      if (users.some(u => u.email.toLowerCase() === email)) {
+        notify("This @gmail.com account already exists. Please log in.", "error");
+        return;
+      }
+
+      const newUser = {
+        name,
+        email,
+        phone,
+        usdtBalance: SIGNUP_BONUS_USDT,
+        cryptoHoldings: {},
+        status: "Active"
+      };
+
+      users.push(newUser);
+      saveLocalUsers(users);
+      await syncUserToSupabase(newUser);
+
+      notify("Account created with $10.00 USDT welcome bonus!", "success");
+      openSessionView(
+        "Spot Trader",
+        `${email} (${phone})`,
+        `$${SIGNUP_BONUS_USDT.toFixed(2)} USDT`,
+        `Welcome ${name}. Your account is active with a $10.00 USDT welcome bonus and $0.00 starting crypto holdings.`
+      );
+    }
+
+    async function handleUnifiedLogin(event) {
+      event.preventDefault();
+      const email = document.getElementById("login-email").value.trim().toLowerCase();
+      const phone = document.getElementById("login-phone").value.trim();
+      const password = document.getElementById("login-password").value;
+
+      if (email === ADMIN_EMAIL.toLowerCase()) {
+        if (password !== DEFAULT_ADMIN_PASSWORD) {
+          notify("Invalid Super Admin password.", "error");
+          return;
+        }
+        notify("Super Admin signed in.", "success");
+        openSessionView(
+          "Super Admin",
+          ADMIN_EMAIL,
+          "Admin Console",
+          "Signed in as Unicom Super Administrator."
+        );
+        return;
+      }
+
+      if (!isGmailAddress(email)) {
+        notify("Trader login requires a valid @gmail.com address.", "error");
+        return;
+      }
+      if (!isPhoneValid(phone)) {
+        notify("Trader login requires a valid phone number.", "error");
+        return;
+      }
+      if (!password) {
+        notify("Please enter your password.", "error");
+        return;
+      }
+
+      const users = loadLocalUsers();
+      let user = users.find(u => u.email.toLowerCase() === email);
+      if (!user) {
+        user = {
+          name: email.split("@")[0],
+          email,
+          phone,
+          usdtBalance: SIGNUP_BONUS_USDT,
+          cryptoHoldings: {},
+          status: "Active"
+        };
+        users.push(user);
+        saveLocalUsers(users);
+      } else {
+        user.phone = phone;
+        saveLocalUsers(users);
+      }
+
+      await syncUserToSupabase(user);
+      notify("Logged in to Unicom.", "success");
+      openSessionView(
+        "Spot Trader",
+        `${user.email} (${user.phone})`,
+        `$${Number(user.usdtBalance || SIGNUP_BONUS_USDT).toFixed(2)} USDT`,
+        `Signed in as ${user.name}.`
+      );
+    }
+
+    initEyeButtons();
+  </script>
+</body>
+</html>
+l>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Snake</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <script src="render.js"></script><!-- defines canvas, ctx, draw() -->
+  <script src="input.js"></script><!-- attaches keyboard + touch listeners -->
+  <script src="game.js"></script> <!-- state, loop, boot -->
+
+</body>
+</html>
